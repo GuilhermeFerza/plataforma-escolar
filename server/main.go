@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -43,6 +44,7 @@ type User struct {
 	FuncionarioID uint   `json:"funcionario_id" gorm:"unique"`
 	Email         string `json:"email" gorm:"unique"`
 	Password      string `json:"password"`
+	Role          string `json:"role" gorm:"default:'funcionario'"`
 }
 
 func HashPassword(password string) (string, error) {
@@ -90,6 +92,21 @@ func main() {
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	r.Use(cors.New(config))
 
+	var count int64
+	DB.Model(&User{}).Count(&count)
+
+	if count == 0 {
+		senhaHash, _ := HashPassword("admin123")
+		superAdmin := User{
+			FuncionarioID: 1,
+			Email:         "admin@admin.com",
+			Password:      senhaHash,
+			Role:          "admin",
+		}
+		DB.Create(&superAdmin)
+		fmt.Println("Admin criado com sucesso. Use admin@admin.com / admin123")
+	}
+
 	r.GET("/api/login", func(c *gin.Context) {
 		var users []User
 		DB.Find(&users)
@@ -134,6 +151,7 @@ func main() {
 			"user": gin.H{
 				"email": user.Email,
 				"id":    user.FuncionarioID,
+				"role":  user.Role,
 			},
 		})
 	})
@@ -162,7 +180,6 @@ func main() {
 	protected := r.Group("/api")
 	protected.Use(AuthMiddleware())
 	{
-		// Stats
 		protected.GET("/stats", func(c *gin.Context) {
 			var totalCursos, totalAlunos, totalTurmas int64
 			DB.Model(&Course{}).Count(&totalCursos)
@@ -175,8 +192,6 @@ func main() {
 				"total_classes":  totalTurmas,
 			})
 		})
-
-		// Cursos
 		protected.GET("/courses", func(c *gin.Context) {
 			var courses []Course
 			name := c.Query("name")
@@ -221,7 +236,6 @@ func main() {
 			c.JSON(200, cursoExistente)
 		})
 
-		// Turmas
 		protected.GET("/classes", func(c *gin.Context) {
 			var classes []Class
 			DB.Preload("Course").Find(&classes)
@@ -260,7 +274,6 @@ func main() {
 			c.JSON(200, turmaExistente)
 		})
 
-		// Alunos
 		protected.GET("/students", func(c *gin.Context) {
 			var students []Student
 			DB.Preload("Class.Course").Find(&students)

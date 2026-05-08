@@ -6,6 +6,8 @@ import Courses from './pages/Courses';
 import Turmas from './pages/Turmas';
 import Alunos from './pages/Alunos';
 import Admin from './pages/Admin';
+import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 
 export default function App() {
   return (
@@ -13,11 +15,50 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/cursos" element={<Courses />} />
-        <Route path="/turmas" element={<Turmas />} />
-        <Route path="/alunos" element={<Alunos />} />
-        <Route path="/admin" element={<Admin />} />
+
+        <Route 
+          path="/admin" 
+          element={
+            <AdminRoute>
+              <Admin />
+            </AdminRoute>
+          } 
+        />
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/cursos" 
+          element={
+            <ProtectedRoute>
+              <Courses />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/turmas" 
+          element={
+            <ProtectedRoute>
+              <Turmas />
+            </ProtectedRoute>
+          } 
+        />
+        
+        <Route 
+          path="/alunos" 
+          element={
+            <ProtectedRoute>
+              <Alunos />
+            </ProtectedRoute>
+          } 
+        />
       </Routes>
     </BrowserRouter>
   );
