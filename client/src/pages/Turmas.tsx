@@ -11,15 +11,35 @@ export default function Turmas() {
   });
 
   const carregarTurmas = () => {
-    fetch("http://localhost:8080/api/classes")
-      .then(response => response.json())
-      .then(data => setTurmas(data))
-      .catch(err => console.error("Erro ao carregar:", err));
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      console.warn("Nenhum token encontrado. Faça o login.");
+      return; 
+    }
 
-    fetch("http://localhost:8080/api/courses")
-      .then(response => response.json())
-      .then(data => setCursos(data))
-      .catch(err => console.error("Erro ao carregar:", err));
+    const headers = { "Authorization": token };
+
+    fetch("http://localhost:8081/api/classes", { headers })
+      .then(response => {
+        if (!response.ok) throw new Error("Não autorizado");
+        return response.json();
+      })
+      .then(data => {
+
+        if (Array.isArray(data)) setTurmas(data);
+      })
+      .catch(err => console.error("Erro ao carregar turmas:", err));
+
+    fetch("http://localhost:8081/api/courses", { headers })
+      .then(response => {
+        if (!response.ok) throw new Error("Não autorizado");
+        return response.json();
+      })
+      .then(data => {
+        if (Array.isArray(data)) setCursos(data);
+      })
+      .catch(err => console.error("Erro ao carregar cursos:", err));
   };
 
 
@@ -32,15 +52,19 @@ export default function Turmas() {
   e.preventDefault();
 
   const url = editandoId
-    ? `http://localhost:8080/api/classes/${editandoId}`
-    : "http://localhost:8080/api/classes";
+    ? `http://localhost:8081/api/classes/${editandoId}`
+    : "http://localhost:8081/api/classes";
   
   const metodo = editandoId ? "PUT" : "POST"
+  const token = localStorage.getItem("token");
 
   try {
     const response = await fetch(url, {
       method: metodo,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": token
+        },
       body: JSON.stringify(novaTurma)
     });
 
@@ -56,9 +80,13 @@ export default function Turmas() {
 
   const handleDelete = async (id) => {
     if (window.confirm("Tem certeza que deseja excluir esta turma?")) {
+      const token = localStorage.getItem("token");
       try {
-        const response = await fetch(`http://localhost:8080/api/classes/${id}`, {
+        const response = await fetch(`http://localhost:8081/api/classes/${id}`, {
           method: "DELETE",
+          headers: {
+            "Authorization": token
+          }
         });
 
         if (response.ok) {

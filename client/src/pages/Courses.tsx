@@ -7,8 +7,14 @@ export default function Courses() {
   const [busca, setBusca] = useState("");
 
   const carregarCursos = async (termo = "") => {
+    const token = localStorage.getItem("token");
     try {
-      const response = await fetch(`http://localhost:8080/api/courses?name=${termo}`);
+      const response = await fetch(`http://localhost:8081/api/courses?name=${termo}`, {
+        headers:{
+          "Authorization": token
+        }
+      });
+      
       const data = await response.json();
       setCursos(data);
     } catch (err) {

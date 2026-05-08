@@ -15,9 +15,18 @@ export default function Alunos() {
 
 
   const carregarDados = async () => {
+    const token = localStorage.getItem("token");
     const [resAlunos, resTurmas] = await Promise.all([
-      fetch("http://localhost:8080/api/students"),
-      fetch("http://localhost:8080/api/classes")
+      fetch("http://localhost:8081/api/students", {
+        headers: {
+          "Authorization": token
+        }
+      }),
+      fetch("http://localhost:8081/api/classes", {
+        headers: {
+          "Authorization": token
+        }
+      })
     ]);
     setAlunos(await resAlunos.json());
     setTurmas(await resTurmas.json());
@@ -29,16 +38,19 @@ export default function Alunos() {
     e.preventDefault();
 
     const url = editandoId
-    ? `http://localhost:8080/api/students/${editandoId}`
-    : "http://localhost:8080/api/students";
+    ? `http://localhost:8081/api/students/${editandoId}`
+    : "http://localhost:8081/api/students";
 
     const metodo = editandoId ? "PUT" : "POST"
-
+    const token = localStorage.getItem("token");
 
   try{
     const response = await fetch(url, {
       method: metodo,
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+        "Content-Type": "application/json",
+        "Authorization": token
+      },
       body: JSON.stringify(novoAluno)
     });
     if (response.ok) {
@@ -53,9 +65,13 @@ export default function Alunos() {
 
   const handleDelete = async (id) => {
     if (window.confirm("Tem certeza que deseja excluir este aluno?")) {
+      const token = localStorage.getItem("token");
       try {
-        const response = await fetch(`http://localhost:8080/api/students/${id}`, {
+        const response = await fetch(`http://localhost:8081/api/students/${id}`, {
           method: "DELETE",
+          headers: {
+            "Authorization": token
+          }
         });
 
         if (response.ok) {

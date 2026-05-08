@@ -15,9 +15,14 @@ export default function Dashboard() {
     duration: '',
     max_students: 30
   });
- 
+
   const carregarCursos = () => {
-    fetch("http://localhost:8080/api/courses")
+    const token = localStorage.getItem("token");
+    fetch("http://localhost:8081/api/courses", {
+      headers: {
+        "Authorization": token
+      }
+    })
       .then(response => response.json())
       .then(data => setCursos(data))
       .catch(err => console.error("Erro ao carregar:", err));
@@ -28,36 +33,46 @@ export default function Dashboard() {
   }, []);
 
   const handleAddCourse = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
   
-  const url = editandoId 
-    ? `http://localhost:8080/api/courses/${editandoId}` 
-    : "http://localhost:8080/api/courses";
-    
-  const metodo = editandoId ? "PUT" : "POST";
+    const url = editandoId 
+      ? `http://localhost:8081/api/courses/${editandoId}` 
+      : "http://localhost:8081/api/courses";
+      
+    const metodo = editandoId ? "PUT" : "POST";
+    const token = localStorage.getItem("token");
 
-  try {
-    const response = await fetch(url, {
-      method: metodo,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(novoCurso)
-    });
+    try {
+      const response = await fetch(url, {
+        method: metodo,
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": token
+        },
+        body: JSON.stringify(novoCurso)
+      });
 
-    if (response.ok) {
-      setNovoCurso({ name: '', category: '', duration: '', max_students: 30 });
-      setEditandoId(null); 
-      carregarCursos();
+      if (response.ok) {
+        setNovoCurso({ name: '', category: '', duration: '', max_students: 30 });
+        setEditandoId(null); 
+        carregarCursos();
+      } else {
+        console.error("Não autorizado ou erro no servidor");
+      }
+    } catch (err) {
+      console.error("Erro na operação:", err);
     }
-  } catch (err) {
-    console.error("Erro na operação:", err);
-  }
-};
+  };
 
   const handleDelete = async (id) => {
     if (window.confirm("Tem certeza que deseja excluir este curso?")) {
+      const token = localStorage.getItem("token");
       try {
-        const response = await fetch(`http://localhost:8080/api/courses/${id}`, {
+        const response = await fetch(`http://localhost:8081/api/courses/${id}`, {
           method: "DELETE",
+          headers: {
+            "Authorization": token
+          }
         });
 
         if (response.ok) {
@@ -82,9 +97,13 @@ export default function Dashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-
   useEffect(() => {
-    fetch("http://localhost:8080/api/stats")
+    const token = localStorage.getItem("token");
+    fetch("http://localhost:8081/api/stats", {
+      headers: {
+        "Authorization": token
+      }
+    })
       .then(res => res.json())
       .then(data => setStatsData(data))
       .catch(err => console.error("Erro ao buscar stats:", err));
@@ -167,31 +186,37 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {cursos.map((curso) => (
-                  <tr key={curso.ID} className="border-b border-slate-50 hover:bg-slate-50">
-                    <td className="py-4 text-sm font-bold">#{curso.ID}</td>
-                    <td className="py-4 text-sm">{curso.name}</td>
-                    <td className="py-4 text-sm">
-                      <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-medium">{curso.category}</span>
-                    </td>
-                    <td className="py-4 text-sm">{curso.duration}</td>
-                    <td className="py-4 text-sm">
-                      <button 
-                        onClick={() => handleDelete(curso.ID)}
-                        className="text-red-500 hover:text-red-700 transition-colors p-1"
-                        title="Excluir curso"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                      <button 
-                        onClick={() => preencherEdicao(curso)} 
-                        className="text-blue-500 hover:text-blue-700 p-2 mr-2"
-                      >
-                        <Pencil size={18} />
-                      </button>
-                    </td>
+                {cursos && cursos.length > 0 ? (
+                  cursos.map((curso) => (
+                    <tr key={curso.ID} className="border-b border-slate-50 hover:bg-slate-50">
+                      <td className="py-4 text-sm font-bold">#{curso.ID}</td>
+                      <td className="py-4 text-sm">{curso.name}</td>
+                      <td className="py-4 text-sm">
+                        <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-medium">{curso.category}</span>
+                      </td>
+                      <td className="py-4 text-sm">{curso.duration}</td>
+                      <td className="py-4 text-sm">
+                        <button 
+                          onClick={() => handleDelete(curso.ID)}
+                          className="text-red-500 hover:text-red-700 transition-colors p-1"
+                          title="Excluir curso"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                        <button 
+                          onClick={() => preencherEdicao(curso)} 
+                          className="text-blue-500 hover:text-blue-700 p-2 mr-2"
+                        >
+                          <Pencil size={18} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="5" className="py-4 text-center text-slate-500">Nenhum curso encontrado.</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

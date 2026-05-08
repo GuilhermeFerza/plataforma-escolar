@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import Turmas from './pages/Turmas';
 import Alunos from './pages/Alunos';
+import Admin from './pages/Admin';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <Route path="/cursos" element={<Courses />} />
         <Route path="/turmas" element={<Turmas />} />
         <Route path="/alunos" element={<Alunos />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
     </BrowserRouter>
   );

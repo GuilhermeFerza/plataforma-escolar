@@ -7,12 +7,33 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (email && password) {
-      console.log("Login realizado!");
-      navigate('/dashboard');
+      try {
+        const response = await fetch("http://localhost:8081/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+        
+          localStorage.setItem("token", data.token);
+          
+          localStorage.setItem("user", JSON.stringify(data.user));
+
+          console.log("Login realizado com sucesso pelo servidor!");
+          navigate('/dashboard'); 
+        } else {
+          alert("E-mail ou senha incorretos. Tente novamente.");
+        }
+      } catch (error) {
+        console.error("Erro ao conectar no servidor:", error);
+        alert("Erro ao conectar no servidor. Verifique se o Go está rodando.");
+      }
     }
   };
 
