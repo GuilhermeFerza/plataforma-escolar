@@ -11,6 +11,7 @@ export default function Sidebar() {
     { icon: Users, label: 'Turmas', path: '/turmas' },
     { icon: Calendar, label: 'Agendamentos', path: '/agendamentos' },
     { icon: MessageSquare, label: 'Mensagens', path: '/mensagens' },
+    { icon: Users, label: 'Alunos', path: '/alunos' },
   ];
 
   return (

@@ -125,7 +125,7 @@ export default function Dashboard() {
               type="text" placeholder="Duração (ex: 40h)" className="p-2 border rounded-lg text-sm"
               value={novoCurso.duration} onChange={(e) => setNovoCurso({...novoCurso, duration: e.target.value})}
             />
-            <button type="submit" className={`${editandoId ? 'bg-blue-500' : 'bg-emerald-500'} text-white ...`}>
+            <button type="submit" className={`${editandoId ? 'bg-blue-500' : 'bg-emerald-500'} text-white rounded-lg cursor-pointer hover:opacity-90 transition-opacity`}>
               {editandoId ? 'Atualizar Curso' : 'Salvar Curso'}
             </button>
 

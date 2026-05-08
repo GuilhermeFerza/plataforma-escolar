@@ -22,9 +22,18 @@ type Class struct {
 	Course   Course `json:"course" gorm:"foreignKey:CourseID"`
 }
 
+type Student struct {
+	gorm.Model
+	Name    string `json:"name"`
+	Email   string `json:"email"`
+	CPF     string `json:"cpf" gorm:"unique"`
+	ClassID uint   `json:"class_id"`
+	Class   Class  `json:"class" gorm:"foreignKey:ClassID"`
+}
+
 func main() {
 	ConectarBanco()
-	DB.AutoMigrate(&Course{}, &Class{})
+	DB.AutoMigrate(&Course{}, &Class{}, &Student{})
 
 	r := gin.Default()
 	r.Use(cors.Default())
@@ -88,6 +97,51 @@ func main() {
 		}
 		DB.Create(&novaTurma)
 		c.JSON(201, novaTurma)
+	})
+
+	r.DELETE("/api/classes/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		if err := DB.Delete(&Class{}, id).Error; err != nil {
+			c.JSON(500, gin.H{"error": "Erro ao deletar turma"})
+			return
+		}
+		c.JSON(200, gin.H{"message": "Turma deletada com sucesso!"})
+	})
+
+	r.PUT("/api/classes/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		var turmaExistente Class
+
+		if err := DB.First(&turmaExistente, id).Error; err != nil {
+			c.JSON(404, gin.H{"error": "Turma não encontrada"})
+			return
+		}
+
+		var dadosNovos Class
+		if err := c.ShouldBindJSON(&dadosNovos); err != nil {
+			c.JSON(400, gin.H{"error": "Dados inválidos"})
+			return
+		}
+
+		DB.Model(&turmaExistente).Updates(dadosNovos)
+
+		c.JSON(200, turmaExistente)
+	})
+
+	r.GET("/api/students", func(c *gin.Context) {
+		var students []Student
+		DB.Preload("Class.Course").Find(&students)
+		c.JSON(200, students)
+	})
+
+	r.POST("/api/students", func(c *gin.Context) {
+		var novoAluno Student
+		if err := c.ShouldBindJSON(&novoAluno); err != nil {
+			c.JSON(400, gin.H{"error": "Dados inválidos"})
+			return
+		}
+		DB.Create(&novoAluno)
+		c.JSON(201, novoAluno)
 	})
 
 	r.Run(":8080")
