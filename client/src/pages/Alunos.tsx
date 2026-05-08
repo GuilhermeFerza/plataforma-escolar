@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
-import { UserPlus, GraduationCap, Mail, CreditCard } from 'lucide-react';
+import { Pencil, Trash2, UserPlus } from 'lucide-react';
 
 export default function Alunos() {
+  
   const [alunos, setAlunos] = useState([]);
   const [turmas, setTurmas] = useState([]);
   const [novoAluno, setNovoAluno] = useState({
@@ -11,6 +12,7 @@ export default function Alunos() {
     cpf: '',
     class_id: ''
   });
+
 
   const carregarDados = async () => {
     const [resAlunos, resTurmas] = await Promise.all([
@@ -25,16 +27,59 @@ export default function Alunos() {
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
-    const response = await fetch("http://localhost:8080/api/students", {
-      method: "POST",
+
+    const url = editandoId
+    ? `http://localhost:8080/api/students/${editandoId}`
+    : "http://localhost:8080/api/students";
+
+    const metodo = editandoId ? "PUT" : "POST"
+
+
+  try{
+    const response = await fetch(url, {
+      method: metodo,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(novoAluno)
     });
     if (response.ok) {
       setNovoAluno({ name: '', email: '', cpf: '', class_id: '' });
+      setEditandoId(null);
       carregarDados();
     }
+  } catch (err){
+    console.error("Erro ao salvar aluno:", err);
+  }
   };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Tem certeza que deseja excluir este aluno?")) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/students/${id}`, {
+          method: "DELETE",
+        });
+
+        if (response.ok) {
+          carregarDados();
+        }
+      } catch (err) {
+        console.error("Erro ao deletar:", err);
+      }
+    }
+  };
+
+  const [editandoId, setEditandoId] = useState(null);
+
+  const preencherEdicao = (aluno) => {
+    setEditandoId(aluno.ID);
+    setNovoAluno({
+      name: aluno.name,
+      email: aluno.email,
+      cpf: aluno.cpf,
+      class_id: aluno.class_id
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
@@ -71,9 +116,19 @@ export default function Alunos() {
                 <option key={t.ID} value={t.ID}>{t.name} ({t.course?.name})</option>
               ))}
             </select>
-            <button type="submit" className="bg-indigo-600 text-white rounded-lg py-2 font-bold hover:bg-indigo-700 transition-all">
-              Matricular
+            <button type="submit" className="bg-blue-600 text-white rounded-lg py-2 font-bold hover:bg-blue-700 transition-all cursor-pointer">
+              {editandoId ? 'Salvar Alterações' : 'Matricular'}
             </button>
+            
+            {editandoId && (
+              <button 
+                type="button" 
+                onClick={() => { setEditandoId(null); setNovoAluno({name: '', email: '', cpf: '', class_id: ''}); }}
+                className="text-slate-500 text-sm underline"
+              >
+                Cancelar
+              </button>
+            )}
           </form>
         </section>
 
@@ -102,6 +157,22 @@ export default function Alunos() {
                       <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs">{aluno.class?.course?.name}</span>
                     </div>
                   </td>
+                   <td className="py-4 text-sm flex gap-2">
+                      <button 
+                        onClick={() => handleDelete(aluno.ID)}
+                        className="text-red-500 hover:text-red-700 transition-colors p-1"
+                        title="Excluir aluno"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                      <button 
+                        onClick={() => preencherEdicao(aluno)} 
+                        className="text-blue-500 hover:text-blue-700 p-1"
+                        title="Editar aluno"
+                      >
+                        <Pencil size={18} />
+                      </button>
+                    </td>
                 </tr>
               ))}
             </tbody>

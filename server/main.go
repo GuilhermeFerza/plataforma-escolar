@@ -56,7 +56,7 @@ func main() {
 
 	r.DELETE("/api/courses/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		if err := DB.Delete(&Course{}, id).Error; err != nil {
+		if err := DB.Unscoped().Delete(&Course{}, id).Error; err != nil {
 			c.JSON(500, gin.H{"error": "Erro ao deletar curso"})
 			return
 		}
@@ -101,7 +101,7 @@ func main() {
 
 	r.DELETE("/api/classes/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		if err := DB.Delete(&Class{}, id).Error; err != nil {
+		if err := DB.Unscoped().Delete(&Class{}, id).Error; err != nil {
 			c.JSON(500, gin.H{"error": "Erro ao deletar turma"})
 			return
 		}
@@ -142,6 +142,35 @@ func main() {
 		}
 		DB.Create(&novoAluno)
 		c.JSON(201, novoAluno)
+	})
+
+	r.DELETE("/api/students/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		if err := DB.Unscoped().Delete(&Student{}, id).Error; err != nil {
+			c.JSON(500, gin.H{"error": "Erro ao deletar aluno"})
+			return
+		}
+		c.JSON(200, gin.H{"message": "Aluno deletado com sucesso!"})
+	})
+
+	r.PUT("/api/students/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		var alunoExistente Student
+
+		if err := DB.First(&alunoExistente, id).Error; err != nil {
+			c.JSON(404, gin.H{"error": "Aluno não encontrado"})
+			return
+		}
+
+		var dadosNovos Student
+		if err := c.ShouldBindJSON(&dadosNovos); err != nil {
+			c.JSON(400, gin.H{"error": "Dados inválidos"})
+			return
+		}
+
+		DB.Model(&alunoExistente).Updates(dadosNovos)
+
+		c.JSON(200, alunoExistente)
 	})
 
 	r.Run(":8080")
