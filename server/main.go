@@ -8,18 +8,19 @@ import (
 
 type Course struct {
 	gorm.Model
-	Name        string `json:"name"`
-	Category    string `json:"category"`
-	Duration    string `json:"duration"`
-	Students    int    `json:"students"`
-	MaxStudents int    `json:"max_students"`
+	Name        string  `json:"name"`
+	Category    string  `json:"category"`
+	Duration    string  `json:"duration"`
+	MaxStudents int     `json:"max_students"`
+	Classes     []Class `json:"classes"`
 }
 
 type Class struct {
 	gorm.Model
-	Name     string `json:"name"`
-	CourseID uint   `json:"course_id"`
-	Course   Course `json:"course" gorm:"foreignKey:CourseID"`
+	Name     string    `json:"name"`
+	CourseID uint      `json:"course_id"`
+	Course   Course    `json:"course" gorm:"foreignKey:CourseID"`
+	Students []Student `json:"students" gorm:"foreignKey:ClassID"`
 }
 
 type Student struct {
@@ -38,9 +39,34 @@ func main() {
 	r := gin.Default()
 	r.Use(cors.Default())
 
+	r.GET("/api/stats", func(c *gin.Context) {
+		var totalCursos int64
+		var totalAlunos int64
+		var totalTurmas int64
+
+		DB.Model(&Course{}).Count(&totalCursos)
+		DB.Model(&Student{}).Count(&totalAlunos)
+		DB.Model(&Class{}).Count(&totalTurmas)
+
+		c.JSON(200, gin.H{
+			"total_courses":  totalCursos,
+			"total_students": totalAlunos,
+			"total_classes":  totalTurmas,
+		})
+	})
+
 	r.GET("/api/courses", func(c *gin.Context) {
 		var courses []Course
-		DB.Find(&courses)
+		name := c.Query("name")
+
+		// O Preload carrega as turmas, e o Preload das Classes carrega os alunos
+		query := DB.Preload("Classes.Students")
+
+		if name != "" {
+			query.Where("name ILIKE ?", "%"+name+"%").Find(&courses)
+		} else {
+			query.Find(&courses)
+		}
 		c.JSON(200, courses)
 	})
 

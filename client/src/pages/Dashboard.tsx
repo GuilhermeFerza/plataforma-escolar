@@ -3,6 +3,11 @@ import Sidebar from '../components/Sidebar';
 import { Users, BookOpen, Calendar, PlusCircle, Trash2, Pencil } from 'lucide-react';
 
 export default function Dashboard() {
+  const [statsData, setStatsData] = useState({
+    total_students: 0,
+    total_courses: 0,
+    total_classes: 0
+  });
   const [cursos, setCursos] = useState([]);
   const [novoCurso, setNovoCurso] = useState({
     name: '',
@@ -78,10 +83,17 @@ export default function Dashboard() {
   };
 
 
+  useEffect(() => {
+    fetch("http://localhost:8080/api/stats")
+      .then(res => res.json())
+      .then(data => setStatsData(data))
+      .catch(err => console.error("Erro ao buscar stats:", err));
+  }, []);
+
   const stats = [
-    { label: 'Total de Alunos', value: '1,240', color: 'text-blue-600', bg: 'bg-blue-100', icon: Users },
-    { label: 'Cursos Ativos', value: cursos.length, color: 'text-emerald-600', bg: 'bg-emerald-100', icon: BookOpen },
-    { label: 'Vagas Restantes', value: '45', color: 'text-amber-600', bg: 'bg-amber-100', icon: Calendar },
+    { label: 'Total de Alunos', value: statsData.total_students, color: 'text-blue-600', bg: 'bg-blue-100', icon: Users },
+    { label: 'Cursos Ativos', value: statsData.total_courses, color: 'text-emerald-600', bg: 'bg-emerald-100', icon: BookOpen },
+    { label: 'Turmas Ativas', value: statsData.total_classes, color: 'text-amber-600', bg: 'bg-amber-100', icon: Calendar },
   ];
 
   return (
