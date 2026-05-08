@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import Turmas from './pages/Turmas';
+import Alunos from './pages/Alunos';
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/cursos" element={<Courses />} />
         <Route path="/turmas" element={<Turmas />} />
+        <Route path="/alunos" element={<Alunos />} />
       </Routes>
     </BrowserRouter>
   );
