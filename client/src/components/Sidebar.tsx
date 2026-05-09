@@ -1,9 +1,22 @@
-import { LayoutDashboard, BookOpen, Users, Calendar, MessageSquare, LogOut } from 'lucide-react';
+import { LayoutDashboard, BookOpen, Users, Calendar, MessageSquare, LogOut, Shield } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const userString = localStorage.getItem("user");
+  let userRole = "";
+
+  if(userString){
+    try{
+      const userObj = JSON.parse(userString);
+      userRole = userObj.role;
+    } catch(e){
+      console.error("Erro ao parsear o usuário do localStorage:", e);
+    }
+  }
+
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -13,6 +26,10 @@ export default function Sidebar() {
     { icon: MessageSquare, label: 'Mensagens', path: '/mensagens' },
     { icon: Users, label: 'Alunos', path: '/alunos' },
   ];
+
+  if (userRole === 'admin'){
+    menuItems.push({ icon: Shield, label: 'Painel Admin', path: '/admin' });
+  }
 
   const handleLogout = () => {
     localStorage.removeItem("token");
