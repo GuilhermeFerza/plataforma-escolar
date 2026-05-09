@@ -31,6 +31,8 @@ type Student struct {
 type User struct {
 	gorm.Model
 	FuncionarioID uint   `json:"funcionario_id" gorm:"unique"`
+	Name          string `json:"name"`
+	Curso         string `json:"curso"`
 	Email         string `json:"email" gorm:"unique"`
 	Password      string `json:"password"`
 	Role          string `json:"role" gorm:"default:'funcionario'"`

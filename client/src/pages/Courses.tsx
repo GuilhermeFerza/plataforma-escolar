@@ -58,7 +58,6 @@ export default function Courses() {
           </button>
         </div>
 
-        {/* TABELA DE DADOS REAIS */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           <table className="w-full text-left">
             <thead className="bg-slate-50/50 border-b border-slate-100">

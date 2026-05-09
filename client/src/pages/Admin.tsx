@@ -1,13 +1,30 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { Mail, Lock, Hash, UserPlus } from 'lucide-react';
 
 export default function Admin() {
+  const [funcionarios, setFuncionarios] = useState([]);
   const [novoUsuario, setNovoUsuario] = useState({
     funcionario_id: '',
+    name: '',
+    curso: '',
     email: '',
     password: ''
   });
+
+  const carregarDados = async () => {
+    const token = localStorage.getItem("token");
+    const response = await fetch("http://localhost:8081/api/login", {
+      headers: {
+        "Authorization": token
+    }
+    });
+    if (response.ok){
+      const data = await response.json();
+      setFuncionarios(data);
+    }
+  };
+  useEffect(() => { carregarDados(); }, [])
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
@@ -23,7 +40,8 @@ export default function Admin() {
 
       if (response.ok) {
         alert("Funcionário habilitado para acesso!");
-        setNovoUsuario({ funcionario_id: '', email: '', password: '' });
+        setNovoUsuario({ funcionario_id: '', name: '', curso: '', email: '', password: '' });
+        carregarDados();
       } else {
         const errorData = await response.json();
         alert(errorData.error);
@@ -65,7 +83,32 @@ export default function Admin() {
                   required
                 />
               </div>
-
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-600 flex items-center gap-2">
+                    <Lock size={16} /> Nome do Funcionario
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="Ex: João Silva"
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  value={novoUsuario.name}
+                  onChange={(e) => setNovoUsuario({...novoUsuario, name: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-600 flex items-center gap-2">
+                    <Lock size={16} /> Curso
+                </label>
+                <input 
+                  type="text" 
+                  placeholder="ex: Ciência da Computação"
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                  value={novoUsuario.curso}
+                  onChange={(e) => setNovoUsuario({...novoUsuario, curso: e.target.value})}
+                  required
+                />
+              </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-600 flex items-center gap-2">
                     <Mail size={16} /> E-mail Corporativo
@@ -79,7 +122,6 @@ export default function Admin() {
                   required
                 />
               </div>
-
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-slate-600 flex items-center gap-2">
                     <Lock size={16} /> Senha Temporária
@@ -93,7 +135,6 @@ export default function Admin() {
                   required
                 />
               </div>
-
               <button 
                 type="submit" 
                 className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold text-lg hover:bg-indigo-700 hover:shadow-lg hover:shadow-indigo-200 transition-all flex items-center justify-center gap-2 mt-4"
@@ -102,12 +143,33 @@ export default function Admin() {
               </button>
             </form>
           </section>
-
-          <footer className="mt-8 text-center text-slate-400 text-sm italic">
+        </div>
+        <div>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b border-slate-100 text-slate-400 text-sm">
+                <th className="py-4 font-semibold">ID</th>
+                <th className="py-4 font-semibold">Nome do Funcionario</th>
+                <th className="py-4 font-semibold">E-mail</th>
+                <th className="py-4 font-semibold">Curso</th>
+              </tr>
+            </thead>
+            <tbody>
+              {funcionarios.map((funcionario) => (
+                <tr key={funcionario.ID} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
+                  <td className="px-6 py-4 text-sm font-bold text-slate-400">#{funcionario.ID}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-slate-800">{funcionario.name}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-slate-800">{funcionario.email}</td>
+                  <td className="px-6 py-4 text-sm text-slate-600">{funcionario.curso}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <footer className="mt-8 text-center text-slate-400 text-sm italic">
             O funcionário poderá alterar essa senha no primeiro acesso.
           </footer>
-        </div>
       </main>
     </div>
   );
-}
+  }
