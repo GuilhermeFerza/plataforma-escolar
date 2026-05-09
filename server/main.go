@@ -4,48 +4,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/GuilhermeFerza/plataforma-escolar/controllers"
+	"github.com/GuilhermeFerza/plataforma-escolar/database"
+	"github.com/GuilhermeFerza/plataforma-escolar/models"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 var jwtSecret = []byte("123123")
-
-type Course struct {
-	gorm.Model
-	Name        string  `json:"name"`
-	Category    string  `json:"category"`
-	Duration    string  `json:"duration"`
-	MaxStudents int     `json:"max_students"`
-	Classes     []Class `json:"classes"`
-}
-
-type Class struct {
-	gorm.Model
-	Name     string    `json:"name"`
-	CourseID uint      `json:"course_id"`
-	Course   Course    `json:"course" gorm:"foreignKey:CourseID"`
-	Students []Student `json:"students" gorm:"foreignKey:ClassID"`
-}
-
-type Student struct {
-	gorm.Model
-	Name    string `json:"name"`
-	Email   string `json:"email"`
-	CPF     string `json:"cpf" gorm:"unique"`
-	ClassID uint   `json:"class_id"`
-	Class   Class  `json:"class" gorm:"foreignKey:ClassID"`
-}
-
-type User struct {
-	gorm.Model
-	FuncionarioID uint   `json:"funcionario_id" gorm:"unique"`
-	Email         string `json:"email" gorm:"unique"`
-	Password      string `json:"password"`
-	Role          string `json:"role" gorm:"default:'funcionario'"`
-}
 
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
@@ -82,8 +50,14 @@ func AuthMiddleware() gin.HandlerFunc {
 }
 
 func main() {
-	ConectarBanco()
-	DB.AutoMigrate(&Course{}, &Class{}, &Student{}, &User{})
+	database.ConectarBanco()
+
+	database.DB.AutoMigrate(
+		&models.Course{},
+		&models.Class{},
+		&models.Student{},
+		&models.User{},
+	)
 
 	r := gin.Default()
 	config := cors.DefaultConfig()
@@ -93,23 +67,23 @@ func main() {
 	r.Use(cors.New(config))
 
 	var count int64
-	DB.Model(&User{}).Count(&count)
+	database.DB.Model(&models.User{}).Count(&count)
 
 	if count == 0 {
 		senhaHash, _ := HashPassword("admin123")
-		superAdmin := User{
+		superAdmin := models.User{
 			FuncionarioID: 1,
 			Email:         "admin@admin.com",
 			Password:      senhaHash,
 			Role:          "admin",
 		}
-		DB.Create(&superAdmin)
+		database.DB.Create(&superAdmin)
 		fmt.Println("Admin criado com sucesso. Use admin@admin.com / admin123")
 	}
 
 	r.GET("/api/login", func(c *gin.Context) {
-		var users []User
-		DB.Find(&users)
+		var users []models.User
+		database.DB.Find(&users)
 		c.JSON(200, users)
 	})
 
@@ -124,8 +98,8 @@ func main() {
 			return
 		}
 
-		var user User
-		if err := DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
+		var user models.User
+		if err := database.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
 			c.JSON(401, gin.H{"error": "Usuário ou senha incorretos"})
 			return
 		}
@@ -157,7 +131,7 @@ func main() {
 	})
 
 	r.POST("/api/register", func(c *gin.Context) {
-		var user User
+		var user models.User
 		if err := c.ShouldBindJSON(&user); err != nil {
 			c.JSON(400, gin.H{"error": "Dados inválidos"})
 			return
@@ -170,21 +144,22 @@ func main() {
 		}
 		user.Password = hashedPassword
 
-		if err := DB.Create(&user).Error; err != nil {
+		if err := database.DB.Create(&user).Error; err != nil {
 			c.JSON(400, gin.H{"error": "E-mail ou ID de Funcionário já existe"})
 			return
 		}
 
 		c.JSON(201, gin.H{"message": "Funcionário cadastrado com sucesso!"})
 	})
+
 	protected := r.Group("/api")
 	protected.Use(AuthMiddleware())
 	{
 		protected.GET("/stats", func(c *gin.Context) {
 			var totalCursos, totalAlunos, totalTurmas int64
-			DB.Model(&Course{}).Count(&totalCursos)
-			DB.Model(&Student{}).Count(&totalAlunos)
-			DB.Model(&Class{}).Count(&totalTurmas)
+			database.DB.Model(&models.Course{}).Count(&totalCursos)
+			database.DB.Model(&models.Student{}).Count(&totalAlunos)
+			database.DB.Model(&models.Class{}).Count(&totalTurmas)
 
 			c.JSON(200, gin.H{
 				"total_courses":  totalCursos,
@@ -192,123 +167,93 @@ func main() {
 				"total_classes":  totalTurmas,
 			})
 		})
-		protected.GET("/courses", func(c *gin.Context) {
-			var courses []Course
-			name := c.Query("name")
-			query := DB.Preload("Classes.Students")
-			if name != "" {
-				query.Where("name ILIKE ?", "%"+name+"%").Find(&courses)
-			} else {
-				query.Find(&courses)
-			}
-			c.JSON(200, courses)
-		})
-		protected.POST("/courses", func(c *gin.Context) {
-			var novoCurso Course
-			if err := c.ShouldBindJSON(&novoCurso); err != nil {
-				c.JSON(400, gin.H{"error": "Dados inválidos"})
-				return
-			}
-			DB.Create(&novoCurso)
-			c.JSON(201, novoCurso)
-		})
-		protected.DELETE("/courses/:id", func(c *gin.Context) {
-			id := c.Param("id")
-			if err := DB.Unscoped().Delete(&Course{}, id).Error; err != nil {
-				c.JSON(500, gin.H{"error": "Erro ao deletar curso"})
-				return
-			}
-			c.JSON(200, gin.H{"message": "Curso deletado com sucesso!"})
-		})
-		protected.PUT("/courses/:id", func(c *gin.Context) {
-			id := c.Param("id")
-			var cursoExistente Course
-			if err := DB.First(&cursoExistente, id).Error; err != nil {
-				c.JSON(404, gin.H{"error": "Curso não encontrado"})
-				return
-			}
-			var dadosNovos Course
-			if err := c.ShouldBindJSON(&dadosNovos); err != nil {
-				c.JSON(400, gin.H{"error": "Dados inválidos"})
-				return
-			}
-			DB.Model(&cursoExistente).Updates(dadosNovos)
-			c.JSON(200, cursoExistente)
-		})
+
+		// ===== ROTAS DE CURSOS ENXUTAS USANDO O CONTROLLER =====
+		protected.GET("/courses", controllers.GetCourses)
+		protected.POST("/courses", controllers.CreateCourse)
+		protected.DELETE("/courses/:id", controllers.DeleteCourse)
+		protected.PUT("/courses/:id", controllers.UpdateCourse)
+		// =======================================================
 
 		protected.GET("/classes", func(c *gin.Context) {
-			var classes []Class
-			DB.Preload("Course").Find(&classes)
+			var classes []models.Class
+			database.DB.Preload("Course").Find(&classes)
 			c.JSON(200, classes)
 		})
+
 		protected.POST("/classes", func(c *gin.Context) {
-			var novaTurma Class
+			var novaTurma models.Class
 			if err := c.ShouldBindJSON(&novaTurma); err != nil {
 				c.JSON(400, gin.H{"error": "Dados inválidos"})
 				return
 			}
-			DB.Create(&novaTurma)
+			database.DB.Create(&novaTurma)
 			c.JSON(201, novaTurma)
 		})
+
 		protected.DELETE("/classes/:id", func(c *gin.Context) {
 			id := c.Param("id")
-			if err := DB.Unscoped().Delete(&Class{}, id).Error; err != nil {
+			if err := database.DB.Unscoped().Delete(&models.Class{}, id).Error; err != nil {
 				c.JSON(500, gin.H{"error": "Erro ao deletar turma"})
 				return
 			}
 			c.JSON(200, gin.H{"message": "Turma deletada com sucesso!"})
 		})
+
 		protected.PUT("/classes/:id", func(c *gin.Context) {
 			id := c.Param("id")
-			var turmaExistente Class
-			if err := DB.First(&turmaExistente, id).Error; err != nil {
+			var turmaExistente models.Class
+			if err := database.DB.First(&turmaExistente, id).Error; err != nil {
 				c.JSON(404, gin.H{"error": "Turma não encontrada"})
 				return
 			}
-			var dadosNovos Class
+			var dadosNovos models.Class
 			if err := c.ShouldBindJSON(&dadosNovos); err != nil {
 				c.JSON(400, gin.H{"error": "Dados inválidos"})
 				return
 			}
-			DB.Model(&turmaExistente).Updates(dadosNovos)
+			database.DB.Model(&turmaExistente).Updates(dadosNovos)
 			c.JSON(200, turmaExistente)
 		})
 
 		protected.GET("/students", func(c *gin.Context) {
-			var students []Student
-			DB.Preload("Class.Course").Find(&students)
+			var students []models.Student
+			database.DB.Preload("Class.Course").Find(&students)
 			c.JSON(200, students)
 		})
+
 		protected.POST("/students", func(c *gin.Context) {
-			var novoAluno Student
+			var novoAluno models.Student
 			if err := c.ShouldBindJSON(&novoAluno); err != nil {
 				c.JSON(400, gin.H{"error": "Dados inválidos"})
 				return
 			}
-			DB.Create(&novoAluno)
+			database.DB.Create(&novoAluno)
 			c.JSON(201, novoAluno)
 		})
+
 		protected.DELETE("/students/:id", func(c *gin.Context) {
 			id := c.Param("id")
-			if err := DB.Unscoped().Delete(&Student{}, id).Error; err != nil {
+			if err := database.DB.Unscoped().Delete(&models.Student{}, id).Error; err != nil {
 				c.JSON(500, gin.H{"error": "Erro ao deletar aluno"})
 				return
 			}
 			c.JSON(200, gin.H{"message": "Aluno deletado com sucesso!"})
 		})
+
 		protected.PUT("/students/:id", func(c *gin.Context) {
 			id := c.Param("id")
-			var alunoExistente Student
-			if err := DB.First(&alunoExistente, id).Error; err != nil {
+			var alunoExistente models.Student
+			if err := database.DB.First(&alunoExistente, id).Error; err != nil {
 				c.JSON(404, gin.H{"error": "Aluno não encontrado"})
 				return
 			}
-			var dadosNovos Student
+			var dadosNovos models.Student
 			if err := c.ShouldBindJSON(&dadosNovos); err != nil {
 				c.JSON(400, gin.H{"error": "Dados inválidos"})
 				return
 			}
-			DB.Model(&alunoExistente).Updates(dadosNovos)
+			database.DB.Model(&alunoExistente).Updates(dadosNovos)
 			c.JSON(200, alunoExistente)
 		})
 	}
