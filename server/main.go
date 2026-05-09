@@ -168,53 +168,15 @@ func main() {
 			})
 		})
 
-		// ===== ROTAS DE CURSOS ENXUTAS USANDO O CONTROLLER =====
 		protected.GET("/courses", controllers.GetCourses)
 		protected.POST("/courses", controllers.CreateCourse)
 		protected.DELETE("/courses/:id", controllers.DeleteCourse)
 		protected.PUT("/courses/:id", controllers.UpdateCourse)
-		// =======================================================
 
-		protected.GET("/classes", func(c *gin.Context) {
-			var classes []models.Class
-			database.DB.Preload("Course").Find(&classes)
-			c.JSON(200, classes)
-		})
-
-		protected.POST("/classes", func(c *gin.Context) {
-			var novaTurma models.Class
-			if err := c.ShouldBindJSON(&novaTurma); err != nil {
-				c.JSON(400, gin.H{"error": "Dados inválidos"})
-				return
-			}
-			database.DB.Create(&novaTurma)
-			c.JSON(201, novaTurma)
-		})
-
-		protected.DELETE("/classes/:id", func(c *gin.Context) {
-			id := c.Param("id")
-			if err := database.DB.Unscoped().Delete(&models.Class{}, id).Error; err != nil {
-				c.JSON(500, gin.H{"error": "Erro ao deletar turma"})
-				return
-			}
-			c.JSON(200, gin.H{"message": "Turma deletada com sucesso!"})
-		})
-
-		protected.PUT("/classes/:id", func(c *gin.Context) {
-			id := c.Param("id")
-			var turmaExistente models.Class
-			if err := database.DB.First(&turmaExistente, id).Error; err != nil {
-				c.JSON(404, gin.H{"error": "Turma não encontrada"})
-				return
-			}
-			var dadosNovos models.Class
-			if err := c.ShouldBindJSON(&dadosNovos); err != nil {
-				c.JSON(400, gin.H{"error": "Dados inválidos"})
-				return
-			}
-			database.DB.Model(&turmaExistente).Updates(dadosNovos)
-			c.JSON(200, turmaExistente)
-		})
+		protected.GET("/classes", controllers.GetClasses)
+		protected.POST("/classes", controllers.CreateClass)
+		protected.DELETE("/classes/:id", controllers.DeleteClass)
+		protected.PUT("/classes/:id", controllers.UpdateClass)
 
 		protected.GET("/students", func(c *gin.Context) {
 			var students []models.Student
