@@ -67,7 +67,7 @@ export default function Sidebar() {
 
       <div className="p-4 border-t border-slate-100">
         <button 
-          onClick={handleLogout} // <- MUDANÇA AQUI
+          onClick={handleLogout}
           className="flex items-center gap-3 w-full px-4 py-3 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all font-medium text-sm"
         >
           <LogOut size={20} />
