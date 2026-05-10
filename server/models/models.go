@@ -1,6 +1,10 @@
 package models
 
-import "gorm.io/gorm"
+import (
+	"time"
+
+	"gorm.io/gorm"
+)
 
 type Course struct {
 	gorm.Model
@@ -36,4 +40,15 @@ type User struct {
 	Email         string `json:"email" gorm:"unique"`
 	Password      string `json:"password"`
 	Role          string `json:"role" gorm:"default:'funcionario'"`
+}
+
+type Appointment struct {
+	gorm.Model
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Date        time.Time `json:"date"`
+	Type        string    `json:"type"`
+	ClassID     *uint     `json:"class_id"`
+	Class       Class     `json:"class" gorm:"foreignKey:ClassID"`
+	CreatorID   uint      `json:"creator_id"`
 }

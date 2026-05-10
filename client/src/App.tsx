@@ -8,6 +8,7 @@ import Alunos from './pages/Alunos';
 import Admin from './pages/Admin';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
+import Agendamentos from './pages/Agendamentos';
 
 export default function App() {
   return (
@@ -56,6 +57,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Alunos />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/agendamentos" 
+          element={
+            <ProtectedRoute>
+              <Agendamentos />
             </ProtectedRoute>
           } 
         />

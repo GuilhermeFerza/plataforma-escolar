@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/GuilhermeFerza/plataforma-escolar/controllers"
@@ -27,13 +28,15 @@ func CheckPasswordHash(password, hash string) bool {
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		tokenString := c.GetHeader("Authorization")
+		authHeader := c.GetHeader("Authorization")
 
-		if tokenString == "" {
+		if authHeader == "" {
 			c.JSON(401, gin.H{"error": "Acesso negado. Faça login para continuar."})
 			c.Abort()
 			return
 		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			return jwtSecret, nil
@@ -57,6 +60,7 @@ func main() {
 		&models.Class{},
 		&models.Student{},
 		&models.User{},
+		&models.Appointment{},
 	)
 
 	r := gin.Default()
@@ -182,6 +186,10 @@ func main() {
 		protected.POST("/students", controllers.CreateStudent)
 		protected.DELETE("/students/:id", controllers.DeleteStudent)
 		protected.PUT("/students/:id", controllers.UpdateStudent)
+
+		protected.GET("/appointments", controllers.GetAppointments)
+		protected.POST("/appointments", controllers.CreateAppointment)
+		protected.DELETE("/appointments/:id", controllers.DeleteAppointment)
 	}
 
 	r.Run(":8081")
