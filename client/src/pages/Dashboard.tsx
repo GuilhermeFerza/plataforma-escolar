@@ -143,7 +143,7 @@ export default function Dashboard() {
           <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
             <PlusCircle size={20} className="text-emerald-500" /> Novo Curso
           </h2>
-          <form onSubmit={handleAddCourse} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <form onSubmit={handleAddCourse} className="grid grid-cols-1 md:grid-cols-5 gap-5">
             <input 
               type="text" placeholder="Nome do Curso" className="p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
               value={novoCurso.name} onChange={(e) => setNovoCurso({...novoCurso, name: e.target.value})} required
@@ -156,6 +156,10 @@ export default function Dashboard() {
               type="text" placeholder="Duração (ex: 40h)" className="p-2 border rounded-lg text-sm"
               value={novoCurso.duration} onChange={(e) => setNovoCurso({...novoCurso, duration: e.target.value})}
             />
+            <input 
+              type="number" placeholder="Máximo de Alunos" className="p-2 border rounded-lg text-sm"
+              value={novoCurso.max_students} onChange={(e) => setNovoCurso({...novoCurso, max_students: Number(e.target.value)})}
+            />
             <button type="submit" className={`${editandoId ? 'bg-blue-500' : 'bg-emerald-500'} text-white rounded-lg cursor-pointer hover:opacity-90 transition-opacity`}>
               {editandoId ? 'Atualizar Curso' : 'Salvar Curso'}
             </button>
@@ -163,7 +167,7 @@ export default function Dashboard() {
             {editandoId && (
               <button 
                 type="button" 
-                onClick={() => {setEditandoId(null); setNovoCurso({name:'', category:'', duration:''})}}
+                onClick={() => {setEditandoId(null); setNovoCurso({name:'', category:'', duration:'', max_students: 0})}}
                 className="text-slate-400 text-xs mt-2 underline"
               >
                 Cancelar Edição

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { Plus, Search, Filter } from 'lucide-react';
+import NewCourseModal from '../components/NewCourseModal';
 
 export default function Courses() {
   const [cursos, setCursos] = useState([]);
   const [busca, setBusca] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const carregarCursos = async (termo = "") => {
     const token = localStorage.getItem("token");
@@ -26,6 +28,11 @@ export default function Courses() {
     carregarCursos(busca);
   }, [busca]);
 
+  const handleSuccess = () => {
+    setIsModalOpen(false);
+    carregarCursos(busca);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex">
       <Sidebar />
@@ -35,7 +42,9 @@ export default function Courses() {
             <h1 className="text-3xl font-bold text-slate-800">Cursos Técnicos</h1>
             <p className="text-slate-500">Gerencie o catálogo e a ocupação das turmas.</p>
           </div>
-          <button className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20">
+          <button
+            onClick={()=> setIsModalOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20">
             <Plus size={20} />
             Novo Curso
           </button>
@@ -91,6 +100,11 @@ export default function Courses() {
           </table>
         </div>
       </main>
+      <NewCourseModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={handleSuccess} 
+      />
     </div>
   );
 }
