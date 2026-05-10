@@ -77,6 +77,8 @@ func main() {
 		senhaHash, _ := HashPassword("admin123")
 		superAdmin := models.User{
 			FuncionarioID: 1,
+			Name:          "Administrador",
+			Curso:         "Diretoria",
 			Email:         "admin@admin.com",
 			Password:      senhaHash,
 			Role:          "admin",
@@ -130,6 +132,7 @@ func main() {
 				"email": user.Email,
 				"id":    user.FuncionarioID,
 				"role":  user.Role,
+				"name":  user.Name,
 			},
 		})
 	})

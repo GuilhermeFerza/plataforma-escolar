@@ -51,4 +51,5 @@ type Appointment struct {
 	ClassID     *uint     `json:"class_id"`
 	Class       Class     `json:"class" gorm:"foreignKey:ClassID"`
 	CreatorID   uint      `json:"creator_id"`
+	CreatorName string    `json:"creator_name"`
 }

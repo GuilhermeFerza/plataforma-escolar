@@ -11,7 +11,8 @@ export default function Agendamentos() {
     description: '',
     date: '',
     type: 'Evento',
-    class_id: ''
+    class_id: '',
+    creator_name: ''
   });
 
   const carregarDados = () => {
@@ -27,7 +28,6 @@ export default function Agendamentos() {
       })
       .catch(err => console.error("Erro ao carregar agendamentos:", err));
 
-    // Busca as Turmas para o Select
     fetch("http://localhost:8081/api/classes", { headers })
       .then(res => res.ok ? res.json() : Promise.reject(res))
       .then(data => {
@@ -45,9 +45,11 @@ export default function Agendamentos() {
     const token = localStorage.getItem("token");
     const userString = localStorage.getItem("user");
     let userId = 0;
+    let userName = "";
     if (userString) {
         const userObj = JSON.parse(userString);
         userId = userObj.id;
+        userName = userObj.name
     }
 
     const payload = {
@@ -56,7 +58,8 @@ export default function Agendamentos() {
       type: novoAgendamento.type,
       date: new Date(novoAgendamento.date).toISOString(), 
       class_id: novoAgendamento.class_id ? Number(novoAgendamento.class_id) : null,
-      creator_id: userId
+      creator_id: userId,
+      creator_name: userName
     };
 
     try {
@@ -70,7 +73,7 @@ export default function Agendamentos() {
       });
 
       if (response.ok) {
-        setNovoAgendamento({ title: '', description: '', date: '', type: 'Evento', class_id: '' });
+        setNovoAgendamento({ title: '', description: '', date: '', type: 'Evento', class_id: '', creator_name: '' });
         carregarDados();
       } else {
         alert("Erro ao salvar o agendamento.");
@@ -175,6 +178,7 @@ export default function Agendamentos() {
               <tr className="border-b border-slate-100 text-slate-400 text-sm">
                 <th className="py-4 font-semibold">Data e Hora</th>
                 <th className="py-4 font-semibold">Evento</th>
+                <th className="py-4 font-semibold">Orador</th>
                 <th className="py-4 font-semibold">Tipo</th>
                 <th className="py-4 font-semibold">Público</th>
                 <th className="py-4 font-semibold w-16">Ações</th>
@@ -188,6 +192,7 @@ export default function Agendamentos() {
                     {formatarData(agendamento.date)}
                   </td>
                   <td className="py-4 text-sm font-bold">{agendamento.title}</td>
+                  <td className="py-4 text-sm font-bold">{agendamento.creator_name}</td>
                   <td className="py-4 text-sm">
                     <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                       agendamento.type === 'Prova' ? 'bg-red-50 text-red-600' : 
