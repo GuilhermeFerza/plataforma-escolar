@@ -5,87 +5,91 @@ import { PlusCircle, Trash2, Pencil } from 'lucide-react';
 export default function Turmas() {
   const [turmas, setTurmas] = useState([]);
   const [cursos, setCursos] = useState([]);
-  const [novaTurma, setNovaTurma] = useState({
+  const [editandoId, setEditandoId] = useState(null); 
+  const [novaTurma, setNovaTurma] = useState<{name: string, course_id: number | string}>({
     name: '',
     course_id: ''
   });
 
-  const carregarTurmas = () => {
+  const carregarTurmas = async () => {
     const token = localStorage.getItem("token");
-    
-    if (!token) {
-      console.warn("Nenhum token encontrado. Faça o login.");
-      return; 
+    const userString = localStorage.getItem("user");
+    const user = userString ? JSON.parse(userString) : null;
+
+    if (!token) return;
+
+    let cursosPermitidos: string[] = [];
+    if (user?.curso) {
+      try {
+        cursosPermitidos = JSON.parse(user.curso);
+      } catch (e) {
+        cursosPermitidos = [user.curso]; 
+      }
     }
 
-    const headers = { "Authorization": token };
+    try {
+      const [resTurmas, resCursos] = await Promise.all([
+        fetch("http://localhost:8081/api/classes", { headers: { "Authorization": token } }),
+        fetch("http://localhost:8081/api/courses", { headers: { "Authorization": token } })
+      ]);
 
-    fetch("http://localhost:8081/api/classes", { headers })
-      .then(response => {
-        if (!response.ok) throw new Error("Não autorizado");
-        return response.json();
-      })
-      .then(data => {
+      let turmasData = await resTurmas.json();
+      let cursosData = await resCursos.json();
 
-        if (Array.isArray(data)) setTurmas(data);
-      })
-      .catch(err => console.error("Erro ao carregar turmas:", err));
+      if (user?.role !== "admin") {
+        turmasData = turmasData.filter((t: any) => cursosPermitidos.includes(t.course?.name));
+        cursosData = cursosData.filter((c: any) => cursosPermitidos.includes(c.name));
+      }
 
-    fetch("http://localhost:8081/api/courses", { headers })
-      .then(response => {
-        if (!response.ok) throw new Error("Não autorizado");
-        return response.json();
-      })
-      .then(data => {
-        if (Array.isArray(data)) setCursos(data);
-      })
-      .catch(err => console.error("Erro ao carregar cursos:", err));
+      setTurmas(turmasData);
+      setCursos(cursosData);
+    } catch (err) {
+      console.error("Erro ao carregar dados:", err);
+    }
   };
-
-
 
   useEffect(() => {
     carregarTurmas();
   }, []);
 
-  const handleAddClass = async (e) => {
-  e.preventDefault();
+  const handleAddClass = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  const url = editandoId
-    ? `http://localhost:8081/api/classes/${editandoId}`
-    : "http://localhost:8081/api/classes";
-  
-  const metodo = editandoId ? "PUT" : "POST"
-  const token = localStorage.getItem("token");
+    const url = editandoId
+      ? `http://localhost:8081/api/classes/${editandoId}`
+      : "http://localhost:8081/api/classes";
+    
+    const metodo = editandoId ? "PUT" : "POST"
+    const token = localStorage.getItem("token");
 
-  try {
-    const response = await fetch(url, {
-      method: metodo,
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": token
+    try {
+      const response = await fetch(url, {
+        method: metodo,
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": token || ""
         },
-      body: JSON.stringify(novaTurma)
-    });
+        body: JSON.stringify(novaTurma)
+      });
 
-    if (response.ok) {
-      setNovaTurma({ name: '', course_id: '' });
-      setEditandoId(null);
-      carregarTurmas();
+      if (response.ok) {
+        setNovaTurma({ name: '', course_id: '' });
+        setEditandoId(null);
+        carregarTurmas();
+      }
+    } catch (err) {
+      console.error("Erro ao salvar turma:", err);
     }
-  } catch (err) {
-    console.error("Erro ao salvar turma:", err);
-  }
-};
+  };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir esta turma?")) {
       const token = localStorage.getItem("token");
       try {
         const response = await fetch(`http://localhost:8081/api/classes/${id}`, {
           method: "DELETE",
           headers: {
-            "Authorization": token
+            "Authorization": token || ""
           }
         });
 
@@ -98,9 +102,7 @@ export default function Turmas() {
     }
   };
 
-  const [editandoId, setEditandoId] = useState(null); 
-
-  const preencherEdicao = (turma) => {
+  const preencherEdicao = (turma: any) => {
     setEditandoId(turma.ID);
     setNovaTurma({
       name: turma.name,
@@ -139,7 +141,7 @@ export default function Turmas() {
               required
             >
               <option value="">Selecione um Curso</option>
-              {cursos.map(curso => (
+              {cursos.map((curso: any) => (
                 <option key={curso.ID} value={curso.ID}>{curso.name}</option>
               ))}
             </select>
@@ -167,11 +169,12 @@ export default function Turmas() {
                 <th className="py-4 font-semibold">ID</th>
                 <th className="py-4 font-semibold">Turma</th>
                 <th className="py-4 font-semibold">Curso Vinculado</th>
+                <th className="py-4 font-semibold">Ações</th>
               </tr>
             </thead>
             <tbody>
-              {turmas.map((turma) => (
-                <tr key={turma.ID} className="border-b border-slate-50 text-slate-800">
+              {turmas.map((turma: any) => (
+                <tr key={turma.ID} className="border-b border-slate-50 text-slate-800 hover:bg-slate-50">
                   <td className="py-4 text-sm font-bold">#{turma.ID}</td>
                   <td className="py-4 text-sm">{turma.name}</td>
                   <td className="py-4 text-sm">
@@ -197,6 +200,11 @@ export default function Turmas() {
                     </td>
                 </tr>
               ))}
+              {turmas.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="py-8 text-center text-slate-400 text-sm">Nenhuma turma encontrada.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

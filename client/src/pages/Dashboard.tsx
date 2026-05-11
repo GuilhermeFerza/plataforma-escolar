@@ -8,7 +8,9 @@ export default function Dashboard() {
     total_courses: 0,
     total_classes: 0
   });
+  
   const [cursos, setCursos] = useState([]);
+  const [editandoId, setEditandoId] = useState(null);
   const [novoCurso, setNovoCurso] = useState({
     name: '',
     category: '',
@@ -16,11 +18,43 @@ export default function Dashboard() {
     max_students: 30
   });
 
+  // ========================================================
+  // LÓGICA DOS DROPDOWNS INTELIGENTES (DATALISTS)
+  // ========================================================
+  const [categorias, setCategorias] = useState<string[]>([]);
+  const [nomesSugeridos, setNomesSugeridos] = useState<string[]>([]);
+
+  // 1. Extrai as categorias únicas quando a lista de cursos é carregada
+  useEffect(() => {
+    if (cursos.length > 0) {
+      const catsUnicas = [...new Set(cursos.map((c: any) => c.category).filter(Boolean))];
+      setCategorias(catsUnicas as string[]);
+    }
+  }, [cursos]);
+
+  // 2. Filtra os nomes dos cursos sugeridos com base na categoria preenchida
+  useEffect(() => {
+    if (novoCurso.category) {
+      // Se tem categoria, mostra só os cursos daquela categoria
+      const nomesFiltrados = cursos
+        .filter((c: any) => c.category === novoCurso.category)
+        .map((c: any) => c.name)
+        .filter(Boolean);
+      
+      setNomesSugeridos([...new Set(nomesFiltrados)] as string[]);
+    } else {
+      // Se não tem categoria, mostra todos os cursos
+      const todosNomes = cursos.map((c: any) => c.name).filter(Boolean);
+      setNomesSugeridos([...new Set(todosNomes)] as string[]);
+    }
+  }, [novoCurso.category, cursos]);
+  // ========================================================
+
   const carregarCursos = () => {
     const token = localStorage.getItem("token");
     fetch("http://localhost:8081/api/courses", {
       headers: {
-        "Authorization": token
+        "Authorization": token || ""
       }
     })
       .then(response => response.json())
@@ -32,7 +66,7 @@ export default function Dashboard() {
     carregarCursos();
   }, []);
 
-  const handleAddCourse = async (e) => {
+  const handleAddCourse = async (e: React.FormEvent) => {
     e.preventDefault();
   
     const url = editandoId 
@@ -47,7 +81,7 @@ export default function Dashboard() {
         method: metodo,
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": token
+          "Authorization": token || ""
         },
         body: JSON.stringify(novoCurso)
       });
@@ -64,14 +98,14 @@ export default function Dashboard() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir este curso?")) {
       const token = localStorage.getItem("token");
       try {
         const response = await fetch(`http://localhost:8081/api/courses/${id}`, {
           method: "DELETE",
           headers: {
-            "Authorization": token
+            "Authorization": token || ""
           }
         });
 
@@ -84,9 +118,7 @@ export default function Dashboard() {
     }
   };
 
-  const [editandoId, setEditandoId] = useState(null);
-
-  const preencherEdicao = (curso) => {
+  const preencherEdicao = (curso: any) => {
     setEditandoId(curso.ID);
     setNovoCurso({
       name: curso.name,
@@ -101,7 +133,7 @@ export default function Dashboard() {
     const token = localStorage.getItem("token");
     fetch("http://localhost:8081/api/stats", {
       headers: {
-        "Authorization": token
+        "Authorization": token || ""
       }
     })
       .then(res => res.json())
@@ -141,34 +173,64 @@ export default function Dashboard() {
 
         <section className="mb-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
           <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <PlusCircle size={20} className="text-emerald-500" /> Novo Curso
+            <PlusCircle size={20} className="text-emerald-500" /> {editandoId ? 'Editar Curso' : 'Novo Curso'}
           </h2>
           <form onSubmit={handleAddCourse} className="grid grid-cols-1 md:grid-cols-5 gap-5">
+            
+            {/* INPUT INTELIGENTE DA CATEGORIA (Para definir o filtro primeiro) */}
+            <div className="relative">
+              <input 
+                list="lista-categorias"
+                type="text" 
+                placeholder="Categoria (Escolha/Digite)" 
+                className="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                value={novoCurso.category} 
+                onChange={(e) => setNovoCurso({...novoCurso, category: e.target.value})}
+                required
+              />
+              <datalist id="lista-categorias">
+                {categorias.map((cat: any) => (
+                  <option key={cat} value={cat} />
+                ))}
+              </datalist>
+            </div>
+
+            {/* INPUT INTELIGENTE DO NOME (Filtrado pela categoria acima) */}
+            <div className="relative">
+              <input 
+                list="lista-nomes-cursos"
+                type="text" 
+                placeholder="Nome (Escolha/Digite)" 
+                className="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                value={novoCurso.name} 
+                onChange={(e) => setNovoCurso({...novoCurso, name: e.target.value})} 
+                required
+              />
+              <datalist id="lista-nomes-cursos">
+                {nomesSugeridos.map((nome: any) => (
+                  <option key={nome} value={nome} />
+                ))}
+              </datalist>
+            </div>
+
             <input 
-              type="text" placeholder="Nome do Curso" className="p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-              value={novoCurso.name} onChange={(e) => setNovoCurso({...novoCurso, name: e.target.value})} required
-            />
-            <input 
-              type="text" placeholder="Categoria" className="p-2 border rounded-lg text-sm"
-              value={novoCurso.category} onChange={(e) => setNovoCurso({...novoCurso, category: e.target.value})}
-            />
-            <input 
-              type="text" placeholder="Duração (ex: 40h)" className="p-2 border rounded-lg text-sm"
+              type="text" placeholder="Duração (ex: 40h)" className="p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
               value={novoCurso.duration} onChange={(e) => setNovoCurso({...novoCurso, duration: e.target.value})}
             />
             <input 
-              type="number" placeholder="Máximo de Alunos" className="p-2 border rounded-lg text-sm"
+              type="number" placeholder="Máx. Alunos" className="p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
               value={novoCurso.max_students} onChange={(e) => setNovoCurso({...novoCurso, max_students: Number(e.target.value)})}
+              min="1"
             />
-            <button type="submit" className={`${editandoId ? 'bg-blue-500' : 'bg-emerald-500'} text-white rounded-lg cursor-pointer hover:opacity-90 transition-opacity`}>
+            <button type="submit" className={`${editandoId ? 'bg-blue-500 hover:bg-blue-600' : 'bg-emerald-500 hover:bg-emerald-600'} text-white font-bold rounded-lg cursor-pointer transition-colors shadow-sm`}>
               {editandoId ? 'Atualizar Curso' : 'Salvar Curso'}
             </button>
 
             {editandoId && (
               <button 
                 type="button" 
-                onClick={() => {setEditandoId(null); setNovoCurso({name:'', category:'', duration:'', max_students: 0})}}
-                className="text-slate-400 text-xs mt-2 underline"
+                onClick={() => {setEditandoId(null); setNovoCurso({name:'', category:'', duration:'', max_students: 30})}}
+                className="col-span-5 md:col-span-1 text-slate-400 text-xs mt-[-10px] underline hover:text-slate-600 cursor-pointer"
               >
                 Cancelar Edição
               </button>
@@ -191,25 +253,26 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {cursos && cursos.length > 0 ? (
-                  cursos.map((curso) => (
+                  cursos.map((curso: any) => (
                     <tr key={curso.ID} className="border-b border-slate-50 hover:bg-slate-50">
-                      <td className="py-4 text-sm font-bold">#{curso.ID}</td>
-                      <td className="py-4 text-sm">{curso.name}</td>
+                      <td className="py-4 text-sm font-bold text-slate-400">#{curso.ID}</td>
+                      <td className="py-4 text-sm font-medium text-slate-800">{curso.name}</td>
                       <td className="py-4 text-sm">
-                        <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-medium">{curso.category}</span>
+                        <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold uppercase">{curso.category}</span>
                       </td>
-                      <td className="py-4 text-sm">{curso.duration}</td>
+                      <td className="py-4 text-sm text-slate-600">{curso.duration}</td>
                       <td className="py-4 text-sm">
                         <button 
                           onClick={() => handleDelete(curso.ID)}
-                          className="text-red-500 hover:text-red-700 transition-colors p-1"
+                          className="text-red-400 hover:text-red-600 transition-colors p-1 cursor-pointer"
                           title="Excluir curso"
                         >
                           <Trash2 size={18} />
                         </button>
                         <button 
                           onClick={() => preencherEdicao(curso)} 
-                          className="text-blue-500 hover:text-blue-700 p-2 mr-2"
+                          className="text-blue-400 hover:text-blue-600 transition-colors p-2 mr-2 cursor-pointer"
+                          title="Editar curso"
                         >
                           <Pencil size={18} />
                         </button>
@@ -218,7 +281,7 @@ export default function Dashboard() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="py-4 text-center text-slate-500">Nenhum curso encontrado.</td>
+                    <td colSpan={5} className="py-8 text-center text-slate-400">Nenhum curso encontrado.</td>
                   </tr>
                 )}
               </tbody>

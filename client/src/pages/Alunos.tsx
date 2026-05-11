@@ -16,20 +16,35 @@ export default function Alunos() {
 
   const carregarDados = async () => {
     const token = localStorage.getItem("token");
-    const [resAlunos, resTurmas] = await Promise.all([
-      fetch("http://localhost:8081/api/students", {
-        headers: {
-          "Authorization": token
-        }
-      }),
-      fetch("http://localhost:8081/api/classes", {
-        headers: {
-          "Authorization": token
-        }
-      })
-    ]);
-    setAlunos(await resAlunos.json());
-    setTurmas(await resTurmas.json());
+    const userString = localStorage.getItem("user");
+    const user = userString ? JSON.parse(userString) : null;
+
+    try {
+      const [resAlunos, resTurmas] = await Promise.all([
+        fetch("http://localhost:8081/api/students", { headers: { "Authorization": token || "" } }),
+        fetch("http://localhost:8081/api/classes", { headers: { "Authorization": token || "" } })
+      ]);
+
+      let alunosData = await resAlunos.json();
+      let turmasData = await resTurmas.json();
+
+      // O FILTRO DE ACESSO:
+      if (user?.role !== "admin") {
+        // 1. Filtra as turmas para o Dropdown
+        turmasData = turmasData.filter((t: any) => t.course?.name === user?.curso);
+        
+        // 2. Extrai os IDs das turmas permitidas
+        const turmasIdsPermitidas = turmasData.map((t: any) => t.ID);
+        
+        // 3. Filtra a lista de alunos para mostrar apenas os que estão nessas turmas
+        alunosData = alunosData.filter((a: any) => turmasIdsPermitidas.includes(a.class_id));
+      }
+
+      setAlunos(alunosData);
+      setTurmas(turmasData);
+    } catch (err) {
+      console.error("Erro ao carregar dados da secretaria:", err);
+    }
   };
 
   useEffect(() => { carregarDados(); }, []);

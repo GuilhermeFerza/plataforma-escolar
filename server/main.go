@@ -133,6 +133,7 @@ func main() {
 				"id":    user.FuncionarioID,
 				"role":  user.Role,
 				"name":  user.Name,
+				"curso": user.Curso,
 			},
 		})
 	})
