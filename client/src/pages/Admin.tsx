@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
-import { Mail, Lock, Hash, UserPlus, BookOpen, PlusCircle, LayoutGrid, X } from 'lucide-react';
+import { Mail, Lock, Hash, UserPlus, BookOpen, PlusCircle, LayoutGrid, X, Trash2, Pencil } from 'lucide-react';
 
 export default function Admin(){
   const [funcionarios, setFuncionarios] = useState([]);
   const [cursos, setCursos] = useState([]);
   const [categorias, setCategorias] = useState<string[]>([]);
-
+  const [editandoFuncionarioId, setEditandoFuncionarioId] = useState<number | null>(null);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState("");
   const [cursoSelecionadoTemp, setCursoSelecionadoTemp] = useState("");
   const [cursosFiltrados, setCursosFiltrados] = useState([]);
@@ -103,28 +103,83 @@ export default function Admin(){
       return;
     }
 
+    const url = editandoFuncionarioId 
+      ? `http://localhost:8081/api/users/${editandoFuncionarioId}`
+      : "http://localhost:8081/api/register";
+    const method = editandoFuncionarioId ? "PUT" : "POST";
+
     try {
-      const response = await fetch("http://localhost:8081/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const token = localStorage.getItem("token");
+      const response = await fetch(url, {
+        method: method,
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": token || ""
+        },
         body: JSON.stringify({
           ...novoFuncionario,
           funcionario_id: Number(novoFuncionario.funcionario_id),
           curso: JSON.stringify(listaCursosPermitidos) 
         }) 
       });
+
       if (response.ok){
-        alert("Funcionário habilitado com sucesso!");
+        alert(editandoFuncionarioId ? "Funcionário atualizado com sucesso!" : "Funcionário habilitado com sucesso!");
         setNovoFuncionario({ funcionario_id: '', name: '', email: '', password: ''});
         setCategoriaSelecionada("");
         setListaCursosPermitidos([]);
+        setEditandoFuncionarioId(null);
         carregarDados();
       } else {
-        const errorData = await response.json();
-        alert(errorData.error)
+        try {
+          const errorData = await response.json();
+          alert(errorData.error);
+        } catch {
+          alert("Erro no servidor (A rota pode estar inacessível).");
+        }
       }
     } catch(err){ console.error(err);}
   };
+
+  const handleDeleteFuncionario = async (id: number) => {
+    if (window.confirm("Tem certeza que deseja remover o acesso deste funcionário?")) {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch(`http://localhost:8081/api/users/${id}`, {
+          method: "DELETE",
+          headers: { "Authorization": token || "" }
+        });
+        
+        if (response.ok) {
+          carregarDados();
+        } else {
+          try {
+            const err = await response.json();
+            alert(err.error || err.message);
+          } catch {
+            alert("Erro interno no servidor ao tentar excluir.");
+          }
+        }
+      } catch (err) { console.error(err); }
+    }
+  };
+  const preencherEdicaoFuncionario = (func: any) => {
+    setEditandoFuncionarioId(func.ID);
+    setNovoFuncionario({
+      funcionario_id: func.funcionario_id.toString(),
+      name: func.name,
+      email: func.email,
+      password: ""
+    });
+  
+    try {
+      setListaCursosPermitidos(JSON.parse(func.curso));
+    } catch {
+      setListaCursosPermitidos([func.curso]);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
 
   const renderCursosTabela = (cursoString: string) => {
     try {
@@ -294,9 +349,24 @@ export default function Admin(){
                 </div>
               </div>
 
-              <button type="submit" className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer">
-                 <UserPlus size={20} /> Ativar Acesso
+              <button type="submit" className={`w-full text-white py-3.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer ${editandoFuncionarioId ? 'bg-amber-500 hover:bg-amber-600' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                 <UserPlus size={20} /> {editandoFuncionarioId ? "Salvar Alterações" : "Ativar Acesso"}
               </button>
+
+              {editandoFuncionarioId && (
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setEditandoFuncionarioId(null); 
+                    setNovoFuncionario({funcionario_id: '', name: '', email: '', password: ''});
+                    setListaCursosPermitidos([]);
+                    setCategoriaSelecionada("");
+                  }}
+                  className="w-full text-slate-400 text-xs mt-2 underline hover:text-slate-600 cursor-pointer text-center block"
+                >
+                  Cancelar Edição
+                </button>
+              )}
             </form>
           </section>
         </div>
@@ -319,6 +389,14 @@ export default function Admin(){
                   <td className="px-6 py-4 text-sm font-medium text-slate-800">{funcionario.email}</td>
                   <td className="px-6 py-4 text-sm text-slate-600 truncate max-w-[300px]" title={renderCursosTabela(funcionario.curso)}>
                     {renderCursosTabela(funcionario.curso)}
+                  </td>
+                  <td className="px-6 py-4 text-sm flex gap-2">
+                    <button onClick={() => handleDeleteFuncionario(funcionario.ID)} className="text-red-400 hover:text-red-600 transition-colors p-1" title="Excluir">
+                      <Trash2 size={18} />
+                    </button>
+                    <button onClick={() => preencherEdicaoFuncionario(funcionario)} className="text-blue-400 hover:text-blue-600 transition-colors p-1" title="Editar">
+                      <Pencil size={18} />
+                    </button>
                   </td>
                 </tr>
               ))}

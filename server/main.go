@@ -163,55 +163,93 @@ func main() {
 			})
 		})
 
-		adminOnly := protected.Group("/")
-		adminOnly.Use(AdminMiddleware())
-		{
-			adminOnly.GET("/users", func(c *gin.Context) {
-				var users []models.User
-				database.DB.Select("id", "funcionario_id", "name", "email", "curso", "role").Find(&users) // Não retorna as senhas!
-				c.JSON(200, users)
-			})
-			adminOnly.POST("/register", func(c *gin.Context) {
-				var user models.User
-				if err := c.ShouldBindJSON(&user); err != nil {
-					c.JSON(400, gin.H{"error": "Dados inválidos"})
-					return
-				}
-
-				hashedPassword, err := HashPassword(user.Password)
-				if err != nil {
-					c.JSON(500, gin.H{"error": "Erro ao processar senha"})
-					return
-				}
-				user.Password = hashedPassword
-
-				if err := database.DB.Create(&user).Error; err != nil {
-					c.JSON(400, gin.H{"error": "E-mail ou ID de Funcionário já existe"})
-					return
-				}
-
-				c.JSON(201, gin.H{"message": "Funcionário cadastrado com sucesso!"})
-			})
-
-			adminOnly.POST("/courses", controllers.CreateCourse)
-			adminOnly.DELETE("/courses/:id", controllers.DeleteCourse)
-			adminOnly.PUT("/courses/:id", controllers.UpdateCourse)
-		}
 		protected.GET("/courses", controllers.GetCourses)
-
 		protected.GET("/classes", controllers.GetClasses)
 		protected.POST("/classes", controllers.CreateClass)
 		protected.DELETE("/classes/:id", controllers.DeleteClass)
 		protected.PUT("/classes/:id", controllers.UpdateClass)
-
 		protected.GET("/students", controllers.GetStudents)
 		protected.POST("/students", controllers.CreateStudent)
 		protected.DELETE("/students/:id", controllers.DeleteStudent)
 		protected.PUT("/students/:id", controllers.UpdateStudent)
-
 		protected.GET("/appointments", controllers.GetAppointments)
 		protected.POST("/appointments", controllers.CreateAppointment)
 		protected.DELETE("/appointments/:id", controllers.DeleteAppointment)
+	}
+
+	adminOnly := r.Group("/api")
+	adminOnly.Use(AuthMiddleware(), AdminMiddleware())
+	{
+		adminOnly.POST("/courses", controllers.CreateCourse)
+		adminOnly.DELETE("/courses/:id", controllers.DeleteCourse)
+		adminOnly.PUT("/courses/:id", controllers.UpdateCourse)
+
+		adminOnly.GET("/users", func(c *gin.Context) {
+			var users []models.User
+			database.DB.Select("id", "funcionario_id", "name", "email", "curso", "role").Find(&users)
+			c.JSON(200, users)
+		})
+
+		adminOnly.POST("/register", func(c *gin.Context) {
+			var user models.User
+			if err := c.ShouldBindJSON(&user); err != nil {
+				c.JSON(400, gin.H{"error": "Dados inválidos"})
+				return
+			}
+			hashedPassword, _ := HashPassword(user.Password)
+			user.Password = hashedPassword
+
+			if err := database.DB.Create(&user).Error; err != nil {
+				c.JSON(400, gin.H{"error": "E-mail ou ID de Funcionário já existe"})
+				return
+			}
+			c.JSON(201, gin.H{"message": "Funcionário cadastrado com sucesso!"})
+		})
+
+		adminOnly.DELETE("/users/:id", func(c *gin.Context) {
+			id := c.Param("id")
+			var user models.User
+			if err := database.DB.First(&user, id).Error; err != nil {
+				c.JSON(404, gin.H{"error": "Usuário não encontrado"})
+				return
+			}
+			if user.FuncionarioID == 1 {
+				c.JSON(403, gin.H{"error": "Segurança: Não é possível excluir o Administrador principal."})
+				return
+			}
+			database.DB.Unscoped().Delete(&models.User{}, id)
+			c.JSON(200, gin.H{"message": "Funcionário removido com sucesso!"})
+		})
+
+		adminOnly.PUT("/users/:id", func(c *gin.Context) {
+			id := c.Param("id")
+			var user models.User
+			if err := database.DB.First(&user, id).Error; err != nil {
+				c.JSON(404, gin.H{"error": "Usuário não encontrado"})
+				return
+			}
+
+			var updatedData models.User
+			if err := c.ShouldBindJSON(&updatedData); err != nil {
+				c.JSON(400, gin.H{"error": "Dados inválidos"})
+				return
+			}
+
+			updates := map[string]interface{}{
+				"name":           updatedData.Name,
+				"email":          updatedData.Email,
+				"curso":          updatedData.Curso,
+				"funcionario_id": updatedData.FuncionarioID,
+			}
+
+			if updatedData.Password != "" {
+				hashedPassword, _ := HashPassword(updatedData.Password)
+				updates["password"] = hashedPassword
+			}
+
+			database.DB.Model(&user).Updates(updates)
+			c.JSON(200, gin.H{"message": "Funcionário atualizado com sucesso!"})
+		})
 	}
 
 	r.Run(":8081")
