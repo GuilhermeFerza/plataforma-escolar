@@ -24,11 +24,19 @@ func CreateClass(c *gin.Context) {
 
 func DeleteClass(c *gin.Context) {
 	id := c.Param("id")
-	if err := database.DB.Unscoped().Delete(&models.Class{}, id).Error; err != nil {
-		c.JSON(500, gin.H{"error": "Erro ao deletar turma"})
+	var count int64
+	database.DB.Model(&models.Student{}).Where("class_id = ?", id).Count(&count)
+	if count > 0 {
+
+		c.JSON(400, gin.H{"error": "Não é possível excluir: Esta turma possui alunos matriculados. Remova ou transfira os alunos antes de excluir a turma."})
 		return
 	}
-	c.JSON(200, gin.H{"message": "Turma deletada com sucesso!"})
+	if err := database.DB.Unscoped().Delete(&models.Class{}, id).Error; err != nil {
+		c.JSON(500, gin.H{"error": "Erro interno ao tentar deletar a turma."})
+		return
+	}
+
+	c.JSON(200, gin.H{"message": "Turma removida com sucesso!"})
 }
 
 func UpdateClass(c *gin.Context) {

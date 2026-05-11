@@ -30,8 +30,14 @@ func CreateCourse(c *gin.Context) {
 
 func DeleteCourse(c *gin.Context) {
 	id := c.Param("id")
+	var count int64
+	database.DB.Model(&models.Class{}).Where("course_id = ?", id).Count(&count)
+	if count > 0 {
+		c.JSON(400, gin.H{"error": "Não é possível excluir: Existem turmas e alunos vinculados a este curso. Exclua as turmas primeiro."})
+		return
+	}
 	if err := database.DB.Unscoped().Delete(&models.Course{}, id).Error; err != nil {
-		c.JSON(500, gin.H{"error": "Erro ao deletar curso"})
+		c.JSON(500, gin.H{"error": "Erro interno ao tentar deletar o curso."})
 		return
 	}
 	c.JSON(200, gin.H{"message": "Curso deletado com sucesso!"})

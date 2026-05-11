@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
-import { PlusCircle, Trash2, Pencil } from 'lucide-react';
+import { PlusCircle, Trash2, Pencil, AlertCircle } from 'lucide-react';
 
 export default function Turmas() {
+  const [toastErro, setToastErro] = useState("");
   const [turmas, setTurmas] = useState([]);
   const [cursos, setCursos] = useState([]);
   const [editandoId, setEditandoId] = useState(null); 
@@ -88,13 +89,15 @@ export default function Turmas() {
       try {
         const response = await fetch(`http://localhost:8081/api/classes/${id}`, {
           method: "DELETE",
-          headers: {
-            "Authorization": token || ""
-          }
+          headers: { "Authorization": token || "" }
         });
 
         if (response.ok) {
           carregarTurmas();
+        } else {
+          const errorData = await response.json();
+          setToastErro(errorData.error);
+          setTimeout(() => setToastErro(""), 5000);
         }
       } catch (err) {
         console.error("Erro ao deletar:", err);
@@ -209,6 +212,12 @@ export default function Turmas() {
           </table>
         </div>
       </main>
+      {toastErro && (
+        <div className="fixed bottom-8 right-8 bg-red-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-10 fade-in duration-300 z-50 max-w-md">
+          <AlertCircle size={24} className="shrink-0" />
+          <span className="font-semibold text-sm">{toastErro}</span>
+        </div>
+      )}
     </div>
   );
 }

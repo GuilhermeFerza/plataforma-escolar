@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
-import { Users, BookOpen, Calendar, PlusCircle, Trash2, Pencil } from 'lucide-react';
+import { Users, BookOpen, Calendar, PlusCircle, Trash2, Pencil, AlertCircle } from 'lucide-react';
+
 
 export default function Dashboard() {
+  const [toastErro, setToastErro] = useState("");
   const [statsData, setStatsData] = useState({
     total_students: 0,
     total_courses: 0,
@@ -18,13 +20,9 @@ export default function Dashboard() {
     max_students: 30
   });
 
-  // ========================================================
-  // LÓGICA DOS DROPDOWNS INTELIGENTES (DATALISTS)
-  // ========================================================
   const [categorias, setCategorias] = useState<string[]>([]);
   const [nomesSugeridos, setNomesSugeridos] = useState<string[]>([]);
 
-  // 1. Extrai as categorias únicas quando a lista de cursos é carregada
   useEffect(() => {
     if (cursos.length > 0) {
       const catsUnicas = [...new Set(cursos.map((c: any) => c.category).filter(Boolean))];
@@ -32,10 +30,8 @@ export default function Dashboard() {
     }
   }, [cursos]);
 
-  // 2. Filtra os nomes dos cursos sugeridos com base na categoria preenchida
   useEffect(() => {
     if (novoCurso.category) {
-      // Se tem categoria, mostra só os cursos daquela categoria
       const nomesFiltrados = cursos
         .filter((c: any) => c.category === novoCurso.category)
         .map((c: any) => c.name)
@@ -43,12 +39,10 @@ export default function Dashboard() {
       
       setNomesSugeridos([...new Set(nomesFiltrados)] as string[]);
     } else {
-      // Se não tem categoria, mostra todos os cursos
       const todosNomes = cursos.map((c: any) => c.name).filter(Boolean);
       setNomesSugeridos([...new Set(todosNomes)] as string[]);
     }
   }, [novoCurso.category, cursos]);
-  // ========================================================
 
   const carregarCursos = () => {
     const token = localStorage.getItem("token");
@@ -104,13 +98,15 @@ export default function Dashboard() {
       try {
         const response = await fetch(`http://localhost:8081/api/courses/${id}`, {
           method: "DELETE",
-          headers: {
-            "Authorization": token || ""
-          }
+          headers: { "Authorization": token || "" }
         });
 
         if (response.ok) {
           carregarCursos();
+        } else {
+          const errorData = await response.json();
+          setToastErro(errorData.error);
+          setTimeout(() => setToastErro(""), 5000);
         }
       } catch (err) {
         console.error("Erro ao deletar:", err);
@@ -177,7 +173,6 @@ export default function Dashboard() {
           </h2>
           <form onSubmit={handleAddCourse} className="grid grid-cols-1 md:grid-cols-5 gap-5">
             
-            {/* INPUT INTELIGENTE DA CATEGORIA (Para definir o filtro primeiro) */}
             <div className="relative">
               <input 
                 list="lista-categorias"
@@ -195,7 +190,6 @@ export default function Dashboard() {
               </datalist>
             </div>
 
-            {/* INPUT INTELIGENTE DO NOME (Filtrado pela categoria acima) */}
             <div className="relative">
               <input 
                 list="lista-nomes-cursos"
@@ -289,6 +283,12 @@ export default function Dashboard() {
           </div>
         </div>
       </main>
+      {toastErro && (
+        <div className="fixed bottom-8 right-8 bg-red-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-10 fade-in duration-300 z-50 max-w-md">
+          <AlertCircle size={24} className="shrink-0" />
+          <span className="font-semibold text-sm">{toastErro}</span>
+        </div>
+      )}
     </div>
   );
 }
