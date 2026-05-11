@@ -41,7 +41,7 @@ export default function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r border-slate-200 flex flex-col">
       <div className="p-8">
-        <h2 className="text-2xl font-bold text-blue-600 tracking-tight">TechAdvance</h2>
+        <h2 className="text-2xl font-bold text-blue-600 tracking-tight">Gestão Educa</h2>
         <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Gestão Acadêmica</p>
       </div>
 

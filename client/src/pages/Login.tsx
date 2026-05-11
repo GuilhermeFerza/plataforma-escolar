@@ -45,7 +45,7 @@ export default function Login() {
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg mb-4">
             <School size={32} />
           </div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">TechAdvance</h1>
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Gestão Educa</h1>
           <p className="text-slate-500 mt-2 font-medium">Portal do Aluno & Admin</p>
         </div>
 
@@ -64,7 +64,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="block w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-3 text-slate-900 transition-all focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-500/20 outline-none"
-                  placeholder="aluno@techadvance.com"
+                  placeholder="aluno@gestaodeduca.com"
                 />
               </div>
             </div>
@@ -103,7 +103,7 @@ export default function Login() {
         </div>
 
         <p className="mt-8 text-center text-xs text-slate-400">
-          © 2024 TechAdvance Institute. Todos os direitos reservados.
+          © 2024 Gestão Educa. Todos os direitos reservados.
         </p>
       </div>
     </div>
