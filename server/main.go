@@ -25,7 +25,6 @@ func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
-
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
@@ -47,7 +46,22 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			c.Set("user_role", claims["role"])
+		}
 
+		c.Next()
+	}
+}
+
+func AdminMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		role, exists := c.Get("user_role")
+		if !exists || role != "admin" {
+			c.JSON(403, gin.H{"error": "Acesso negado. Operação restrita a administradores."})
+			c.Abort()
+			return
+		}
 		c.Next()
 	}
 }
@@ -87,12 +101,6 @@ func main() {
 		fmt.Println("Admin criado com sucesso. Use admin@admin.com / admin123")
 	}
 
-	r.GET("/api/login", func(c *gin.Context) {
-		var users []models.User
-		database.DB.Find(&users)
-		c.JSON(200, users)
-	})
-
 	r.POST("/api/login", func(c *gin.Context) {
 		var input struct {
 			Email    string `json:"email"`
@@ -117,6 +125,7 @@ func main() {
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"user_id": user.ID,
+			"role":    user.Role, // <-- O AdminMiddleware vai ler isso aqui
 			"exp":     time.Now().Add(time.Hour * 24).Unix(),
 		})
 
@@ -138,28 +147,6 @@ func main() {
 		})
 	})
 
-	r.POST("/api/register", func(c *gin.Context) {
-		var user models.User
-		if err := c.ShouldBindJSON(&user); err != nil {
-			c.JSON(400, gin.H{"error": "Dados inválidos"})
-			return
-		}
-
-		hashedPassword, err := HashPassword(user.Password)
-		if err != nil {
-			c.JSON(500, gin.H{"error": "Erro ao processar senha"})
-			return
-		}
-		user.Password = hashedPassword
-
-		if err := database.DB.Create(&user).Error; err != nil {
-			c.JSON(400, gin.H{"error": "E-mail ou ID de Funcionário já existe"})
-			return
-		}
-
-		c.JSON(201, gin.H{"message": "Funcionário cadastrado com sucesso!"})
-	})
-
 	protected := r.Group("/api")
 	protected.Use(AuthMiddleware())
 	{
@@ -176,10 +163,41 @@ func main() {
 			})
 		})
 
+		adminOnly := protected.Group("/")
+		adminOnly.Use(AdminMiddleware())
+		{
+			adminOnly.GET("/users", func(c *gin.Context) {
+				var users []models.User
+				database.DB.Select("id", "funcionario_id", "name", "email", "curso", "role").Find(&users) // Não retorna as senhas!
+				c.JSON(200, users)
+			})
+			adminOnly.POST("/register", func(c *gin.Context) {
+				var user models.User
+				if err := c.ShouldBindJSON(&user); err != nil {
+					c.JSON(400, gin.H{"error": "Dados inválidos"})
+					return
+				}
+
+				hashedPassword, err := HashPassword(user.Password)
+				if err != nil {
+					c.JSON(500, gin.H{"error": "Erro ao processar senha"})
+					return
+				}
+				user.Password = hashedPassword
+
+				if err := database.DB.Create(&user).Error; err != nil {
+					c.JSON(400, gin.H{"error": "E-mail ou ID de Funcionário já existe"})
+					return
+				}
+
+				c.JSON(201, gin.H{"message": "Funcionário cadastrado com sucesso!"})
+			})
+
+			adminOnly.POST("/courses", controllers.CreateCourse)
+			adminOnly.DELETE("/courses/:id", controllers.DeleteCourse)
+			adminOnly.PUT("/courses/:id", controllers.UpdateCourse)
+		}
 		protected.GET("/courses", controllers.GetCourses)
-		protected.POST("/courses", controllers.CreateCourse)
-		protected.DELETE("/courses/:id", controllers.DeleteCourse)
-		protected.PUT("/courses/:id", controllers.UpdateCourse)
 
 		protected.GET("/classes", controllers.GetClasses)
 		protected.POST("/classes", controllers.CreateClass)

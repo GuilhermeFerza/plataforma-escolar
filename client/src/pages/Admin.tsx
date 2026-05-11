@@ -31,7 +31,7 @@ export default function Admin(){
     const headers = { "Authorization": token || "" };
 
     try {
-      const resFunc = await fetch("http://localhost:8081/api/login", { headers });
+      const resFunc = await fetch("http://localhost:8081/api/users", { headers });
       if (resFunc.ok) setFuncionarios(await resFunc.json());
       
       const resCursos = await fetch("http://localhost:8081/api/courses", { headers });
