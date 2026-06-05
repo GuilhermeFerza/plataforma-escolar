@@ -28,15 +28,21 @@ export default function Alunos() {
       let alunosData = await resAlunos.json();
       let turmasData = await resTurmas.json();
 
-      // O FILTRO DE ACESSO:
       if (user?.role !== "admin") {
-        // 1. Filtra as turmas para o Dropdown
-        turmasData = turmasData.filter((t: any) => t.course?.name === user?.curso);
-        
-        // 2. Extrai os IDs das turmas permitidas
+
+
+        let cursosPermitido: string[] = [];
+        if (user?.course){
+          try{
+            cursosPermitido = JSON.parse(user.course);
+          }catch(e){
+            cursosPermitido = [user.course];
+          }
+        }
+
+
+        turmasData = turmasData.filter((t: any) => cursosPermitido.includes(t.course?.name));
         const turmasIdsPermitidas = turmasData.map((t: any) => t.ID);
-        
-        // 3. Filtra a lista de alunos para mostrar apenas os que estão nessas turmas
         alunosData = alunosData.filter((a: any) => turmasIdsPermitidas.includes(a.class_id));
       }
 
