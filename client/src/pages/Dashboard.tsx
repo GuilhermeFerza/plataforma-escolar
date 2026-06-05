@@ -46,7 +46,7 @@ export default function Dashboard() {
 
   const carregarCursos = () => {
     const token = localStorage.getItem("token");
-    fetch("http://localhost:8081/api/courses", {
+    fetch(`${import.meta.env.VITE_API_URL}/courses`, {
       headers: {
         "Authorization": token || ""
       }
@@ -64,8 +64,8 @@ export default function Dashboard() {
     e.preventDefault();
   
     const url = editandoId 
-      ? `http://localhost:8081/api/courses/${editandoId}` 
-      : "http://localhost:8081/api/courses";
+      ? `${import.meta.env.VITE_API_URL}/courses/${editandoId}` 
+      : `${import.meta.env.VITE_API_URL}/courses`;
       
     const metodo = editandoId ? "PUT" : "POST";
     const token = localStorage.getItem("token");
@@ -96,7 +96,7 @@ export default function Dashboard() {
     if (window.confirm("Tem certeza que deseja excluir este curso?")) {
       const token = localStorage.getItem("token");
       try {
-        const response = await fetch(`http://localhost:8081/api/courses/${id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/courses/${id}`, {
           method: "DELETE",
           headers: { "Authorization": token || "" }
         });
@@ -127,7 +127,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    fetch("http://localhost:8081/api/stats", {
+    fetch(`${import.meta.env.VITE_API_URL}/stats`, {
       headers: {
         "Authorization": token || ""
       }

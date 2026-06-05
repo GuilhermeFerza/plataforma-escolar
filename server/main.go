@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -67,6 +69,11 @@ func AdminMiddleware() gin.HandlerFunc {
 }
 
 func main() {
+	_ = godotenv.Load()
+	secret := os.Getenv("JWT_SECRET")
+	if secret != "" {
+		jwtSecret = []byte(secret)
+	}
 	database.ConectarBanco()
 
 	database.DB.AutoMigrate(
@@ -252,5 +259,9 @@ func main() {
 		})
 	}
 
-	r.Run(":8081")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8081"
+	}
+	r.Run(":" + port)
 }

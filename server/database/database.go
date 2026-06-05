@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"os"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -10,7 +11,13 @@ import (
 var DB *gorm.DB
 
 func ConectarBanco() {
-	dsn := "host=localhost user=admin password=123 dbname=techadvance port=5434 sslmode=disable"
+
+	dsn := os.Getenv("DB_DSN")
+
+	if dsn == "" {
+		dsn = "host=localhost user=admin password=123 dbname=techadvance port=5434 sslmode=disable"
+	}
+
 	database, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {

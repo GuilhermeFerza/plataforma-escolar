@@ -30,8 +30,8 @@ export default function Turmas() {
 
     try {
       const [resTurmas, resCursos] = await Promise.all([
-        fetch("http://localhost:8081/api/classes", { headers: { "Authorization": token } }),
-        fetch("http://localhost:8081/api/courses", { headers: { "Authorization": token } })
+        fetch(`${import.meta.env.VITE_API_URL}/classes`, { headers: { "Authorization": token } }),
+        fetch(`${import.meta.env.VITE_API_URL}/courses`, { headers: { "Authorization": token } })
       ]);
 
       let turmasData = await resTurmas.json();
@@ -57,8 +57,8 @@ export default function Turmas() {
     e.preventDefault();
 
     const url = editandoId
-      ? `http://localhost:8081/api/classes/${editandoId}`
-      : "http://localhost:8081/api/classes";
+      ? `${import.meta.env.VITE_API_URL}/classes/${editandoId}`
+      : `${import.meta.env.VITE_API_URL}/classes`;
     
     const metodo = editandoId ? "PUT" : "POST"
     const token = localStorage.getItem("token");
@@ -87,7 +87,7 @@ export default function Turmas() {
     if (window.confirm("Tem certeza que deseja excluir esta turma?")) {
       const token = localStorage.getItem("token");
       try {
-        const response = await fetch(`http://localhost:8081/api/classes/${id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/classes/${id}`, {
           method: "DELETE",
           headers: { "Authorization": token || "" }
         });

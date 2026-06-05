@@ -21,14 +21,14 @@ export default function Agendamentos() {
 
     const headers = { "Authorization": token };
 
-    fetch("http://localhost:8081/api/appointments", { headers })
+    fetch(`${import.meta.env.VITE_API_URL}/appointments`, { headers })
       .then(res => res.ok ? res.json() : Promise.reject(res))
       .then(data => {
         if (Array.isArray(data)) setAgendamentos(data);
       })
       .catch(err => console.error("Erro ao carregar agendamentos:", err));
 
-    fetch("http://localhost:8081/api/classes", { headers })
+    fetch(`${import.meta.env.VITE_API_URL}/classes`, { headers })
       .then(res => res.ok ? res.json() : Promise.reject(res))
       .then(data => {
         if (Array.isArray(data)) setTurmas(data);
@@ -63,7 +63,7 @@ export default function Agendamentos() {
     };
 
     try {
-      const response = await fetch("http://localhost:8081/api/appointments", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/appointments`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -87,7 +87,7 @@ export default function Agendamentos() {
     if (window.confirm("Tem certeza que deseja cancelar este agendamento?")) {
       const token = localStorage.getItem("token");
       try {
-        const response = await fetch(`http://localhost:8081/api/appointments/${id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/appointments/${id}`, {
           method: "DELETE",
           headers: { "Authorization": token || "" }
         });

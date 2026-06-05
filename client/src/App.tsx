@@ -6,8 +6,8 @@ import Courses from './pages/Courses';
 import Turmas from './pages/Turmas';
 import Alunos from './pages/Alunos';
 import Admin from './pages/Admin';
-import ProtectedRoute from './components/ProtectedRoute';
-import AdminRoute from './components/AdminRoute';
+import ProtectedRoute from './utils/ProtectedRoute';
+import AdminRoute from './utils/AdminRoute';
 import Agendamentos from './pages/Agendamentos';
 
 export default function App() {

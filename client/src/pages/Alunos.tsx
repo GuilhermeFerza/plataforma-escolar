@@ -21,8 +21,8 @@ export default function Alunos() {
 
     try {
       const [resAlunos, resTurmas] = await Promise.all([
-        fetch("http://localhost:8081/api/students", { headers: { "Authorization": token || "" } }),
-        fetch("http://localhost:8081/api/classes", { headers: { "Authorization": token || "" } })
+        fetch(`${import.meta.env.VITE_API_URL}/students`, { headers: { "Authorization": token || "" } }),
+        fetch(`${import.meta.env.VITE_API_URL}/classes`, { headers: { "Authorization": token || "" } })
       ]);
 
       let alunosData = await resAlunos.json();
@@ -53,8 +53,8 @@ export default function Alunos() {
     e.preventDefault();
 
     const url = editandoId
-    ? `http://localhost:8081/api/students/${editandoId}`
-    : "http://localhost:8081/api/students";
+    ? `${import.meta.env.VITE_API_URL}/students/${editandoId}`
+    : `${import.meta.env.VITE_API_URL}/students`;
 
     const metodo = editandoId ? "PUT" : "POST"
     const token = localStorage.getItem("token");
@@ -82,7 +82,7 @@ export default function Alunos() {
     if (window.confirm("Tem certeza que deseja excluir este aluno?")) {
       const token = localStorage.getItem("token");
       try {
-        const response = await fetch(`http://localhost:8081/api/students/${id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/students/${id}`, {
           method: "DELETE",
           headers: {
             "Authorization": token

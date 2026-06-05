@@ -11,7 +11,7 @@ export default function Courses() {
   const carregarCursos = async (termo = "") => {
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch(`http://localhost:8081/api/courses?name=${termo}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/courses?=${termo}`, {
         headers:{
           "Authorization": token
         }

@@ -31,10 +31,10 @@ export default function Admin(){
     const headers = { "Authorization": token || "" };
 
     try {
-      const resFunc = await fetch("http://localhost:8081/api/users", { headers });
+      const resFunc = await fetch(`${import.meta.env.VITE_API_URL}/users`, { headers });
       if (resFunc.ok) setFuncionarios(await resFunc.json());
       
-      const resCursos = await fetch("http://localhost:8081/api/courses", { headers });
+      const resCursos = await fetch(`${import.meta.env.VITE_API_URL}/courses`, { headers });
       if (resCursos.ok){
         const dataCursos = await resCursos.json();
         setCursos(dataCursos);
@@ -73,7 +73,7 @@ export default function Admin(){
     e.preventDefault();
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch("http://localhost:8081/api/courses", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/courses`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -104,8 +104,8 @@ export default function Admin(){
     }
 
     const url = editandoFuncionarioId 
-      ? `http://localhost:8081/api/users/${editandoFuncionarioId}`
-      : "http://localhost:8081/api/register";
+      ? `${import.meta.env.VITE_API_URL}/users/${editandoFuncionarioId}`
+      : `${import.meta.env.VITE_API_URL}/register`;
     const method = editandoFuncionarioId ? "PUT" : "POST";
 
     try {
@@ -145,7 +145,7 @@ export default function Admin(){
     if (window.confirm("Tem certeza que deseja remover o acesso deste funcionário?")) {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch(`http://localhost:8081/api/users/${id}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/users/${id}`, {
           method: "DELETE",
           headers: { "Authorization": token || "" }
         });
