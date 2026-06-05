@@ -32,11 +32,11 @@ export default function Alunos() {
 
 
         let cursosPermitido: string[] = [];
-        if (user?.course){
+        if (user?.curso){
           try{
-            cursosPermitido = JSON.parse(user.course);
+            cursosPermitido = JSON.parse(user.curso);
           }catch(e){
-            cursosPermitido = [user.course];
+            cursosPermitido = [user.curso];
           }
         }
 
