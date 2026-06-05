@@ -1,10 +1,10 @@
-import { use, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { Calendar as CalendarIcon, Clock, PlusCircle, Trash2, Tag, School } from 'lucide-react';
 
 export default function Agendamentos() {
-  const [agendamentos, setAgendamentos] = useState([]);
-  const [turmas, setTurmas] = useState([]);
+  const [agendamentos, setAgendamentos] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
   
   const [novoAgendamento, setNovoAgendamento] = useState({
     title: '',
