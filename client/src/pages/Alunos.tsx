@@ -4,9 +4,9 @@ import { Pencil, Trash2, UserPlus } from 'lucide-react';
 
 export default function Alunos() {
   
-  const [alunos, setAlunos] = useState([]);
-  const [turmas, setTurmas] = useState([]);
-  const [novoAluno, setNovoAluno] = useState({
+  const [alunos, setAlunos] = useState<any[]>([]);
+  const [turmas, setTurmas] = useState<any[]>([]);
+  const [novoAluno, setNovoAluno] = useState<{name: string, email: string, cpf: string, class_id: string | number}>({
     name: '',
     email: '',
     cpf: '',
@@ -49,7 +49,7 @@ export default function Alunos() {
 
   useEffect(() => { carregarDados(); }, []);
 
-  const handleAddStudent = async (e) => {
+  const handleAddStudent = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const url = editandoId
@@ -64,7 +64,7 @@ export default function Alunos() {
       method: metodo,
       headers: { 
         "Content-Type": "application/json",
-        "Authorization": token
+        "Authorization": token || ""
       },
       body: JSON.stringify(novoAluno)
     });
@@ -78,14 +78,14 @@ export default function Alunos() {
   }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm("Tem certeza que deseja excluir este aluno?")) {
       const token = localStorage.getItem("token");
       try {
         const response = await fetch(`${import.meta.env.VITE_API_URL}/students/${id}`, {
           method: "DELETE",
           headers: {
-            "Authorization": token
+            "Authorization": token || ""
           }
         });
 
@@ -100,7 +100,7 @@ export default function Alunos() {
 
   const [editandoId, setEditandoId] = useState(null);
 
-  const preencherEdicao = (aluno) => {
+  const preencherEdicao = (aluno: any) => {
     setEditandoId(aluno.ID);
     setNovoAluno({
       name: aluno.name,

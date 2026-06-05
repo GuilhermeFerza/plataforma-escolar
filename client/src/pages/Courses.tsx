@@ -13,7 +13,7 @@ export default function Courses() {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/courses?=${termo}`, {
         headers:{
-          "Authorization": token
+          "Authorization": token || ""
         }
       });
       
