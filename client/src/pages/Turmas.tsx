@@ -4,12 +4,12 @@ import { PlusCircle, Trash2, Pencil, AlertCircle } from 'lucide-react';
 
 export default function Turmas() {
   const [toastErro, setToastErro] = useState("");
-  const [turmas, setTurmas] = useState([]);
-  const [cursos, setCursos] = useState([]);
-  const [editandoId, setEditandoId] = useState(null); 
-  const [novaTurma, setNovaTurma] = useState<{name: string, course_id: number | string}>({
+  const [turmas, setTurmas] = useState<any[]>([]);
+  const [materias, setMaterias] = useState<any[]>([]); // Mudou de cursos para materias
+  const [editandoId, setEditandoId] = useState<number | null>(null); 
+  const [novaTurma, setNovaTurma] = useState<{name: string, subject_id: number | string}>({
     name: '',
-    course_id: ''
+    subject_id: '' // Mudou de course_id para subject_id
   });
 
   const carregarTurmas = async () => {
@@ -19,39 +19,45 @@ export default function Turmas() {
 
     if (!token) return;
 
-    let cursosPermitidos: string[] = [];
-    if (user?.curso) {
-      try {
-        cursosPermitidos = JSON.parse(user.curso);
-      } catch (e) {
-        cursosPermitidos = [user.curso]; 
-      }
-    }
-
     try {
-      const [resTurmas, resCursos] = await Promise.all([
+      // Busca Classes e Subjects (Matérias)
+      const [resTurmas, resMaterias] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_URL}/classes`, { headers: { "Authorization": token } }),
-        fetch(`${import.meta.env.VITE_API_URL}/courses`, { headers: { "Authorization": token } })
+        fetch(`${import.meta.env.VITE_API_URL}/subjects`, { headers: { "Authorization": token } })
       ]);
 
-      let turmasData = await resTurmas.json();
-      let cursosData = await resCursos.json();
+      if (!resTurmas.ok || !resMaterias.ok) {
+        console.error("Erro ao buscar dados na API.");
+        return;
+      }
 
+      let turmasData = await resTurmas.json();
+      let materiasData = await resMaterias.json();
+
+      if (!Array.isArray(turmasData)) turmasData = [];
+      if (!Array.isArray(materiasData)) materiasData = [];
+
+      // Filtro RBAC: O professor só vê turmas e matérias dos cursos que ele leciona
       if (user?.role !== "admin") {
-        turmasData = turmasData.filter((t: any) => cursosPermitidos.includes(t.course?.name));
-        cursosData = cursosData.filter((c: any) => cursosPermitidos.includes(c.name));
+        let cursosPermitidos: string[] = [];
+        if (user?.curso) {
+          try { cursosPermitidos = JSON.parse(user.curso); } 
+          catch (e) { cursosPermitidos = [user.curso]; }
+        }
+        
+        // Filtra a lista usando o curso da matéria
+        materiasData = materiasData.filter((m: any) => m.course?.name && cursosPermitidos.includes(m.course?.name));
+        turmasData = turmasData.filter((t: any) => t.subject?.course?.name && cursosPermitidos.includes(t.subject?.course?.name));
       }
 
       setTurmas(turmasData);
-      setCursos(cursosData);
+      setMaterias(materiasData);
     } catch (err) {
-      console.error("Erro ao carregar dados:", err);
+      console.error("Erro catastrófico ao carregar dados:", err);
     }
   };
 
-  useEffect(() => {
-    carregarTurmas();
-  }, []);
+  useEffect(() => { carregarTurmas(); }, []);
 
   const handleAddClass = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,17 +76,19 @@ export default function Turmas() {
           "Content-Type": "application/json",
           "Authorization": token || ""
         },
-        body: JSON.stringify(novaTurma)
+        body: JSON.stringify({...novaTurma, subject_id: Number(novaTurma.subject_id)})
       });
 
       if (response.ok) {
-        setNovaTurma({ name: '', course_id: '' });
+        setNovaTurma({ name: '', subject_id: '' });
         setEditandoId(null);
         carregarTurmas();
+      } else {
+        const errorData = await response.json();
+        setToastErro(errorData.error || "Erro ao salvar turma");
+        setTimeout(() => setToastErro(""), 5000);
       }
-    } catch (err) {
-      console.error("Erro ao salvar turma:", err);
-    }
+    } catch (err) { console.error("Erro ao salvar turma:", err); }
   };
 
   const handleDelete = async (id: number) => {
@@ -91,17 +99,13 @@ export default function Turmas() {
           method: "DELETE",
           headers: { "Authorization": token || "" }
         });
-
-        if (response.ok) {
-          carregarTurmas();
-        } else {
+        if (response.ok) { carregarTurmas(); } 
+        else {
           const errorData = await response.json();
           setToastErro(errorData.error);
           setTimeout(() => setToastErro(""), 5000);
         }
-      } catch (err) {
-        console.error("Erro ao deletar:", err);
-      }
+      } catch (err) { console.error("Erro ao deletar:", err); }
     }
   };
 
@@ -109,7 +113,7 @@ export default function Turmas() {
     setEditandoId(turma.ID);
     setNovaTurma({
       name: turma.name,
-      course_id: turma.course_id
+      subject_id: turma.subject_id
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -120,7 +124,7 @@ export default function Turmas() {
       <main className="ml-64 flex-1 p-10">
         <header className="mb-10">
           <h1 className="text-3xl font-bold text-slate-800">Gestão de Turmas</h1>
-          <p className="text-slate-500 mt-1">Vincule turmas aos seus cursos ativos.</p>
+          <p className="text-slate-500 mt-1">Crie turmas e vincule-as às matérias existentes.</p>
         </header>
 
         <section className="mb-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
@@ -130,7 +134,7 @@ export default function Turmas() {
           </h2>
           <form onSubmit={handleAddClass} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <input 
-              type="text" placeholder="Nome da Turma (Ex: Turma A)" 
+              type="text" placeholder="Nome da Turma (Ex: Turma B)" 
               className="p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
               value={novaTurma.name}
               onChange={(e) => setNovaTurma({...novaTurma, name: e.target.value})}
@@ -139,13 +143,13 @@ export default function Turmas() {
             
             <select 
               className="p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
-              value={novaTurma.course_id}
-              onChange={(e) => setNovaTurma({...novaTurma, course_id: Number(e.target.value)})}
+              value={novaTurma.subject_id}
+              onChange={(e) => setNovaTurma({...novaTurma, subject_id: Number(e.target.value)})}
               required
             >
-              <option value="">Selecione um Curso</option>
-              {cursos.map((curso: any) => (
-                <option key={curso.ID} value={curso.ID}>{curso.name}</option>
+              <option value="">Selecione uma Matéria</option>
+              {materias.map((materia: any) => (
+                <option key={materia.ID} value={materia.ID}>{materia.name}</option>
               ))}
             </select>
 
@@ -156,7 +160,7 @@ export default function Turmas() {
             {editandoId && (
               <button 
                 type="button" 
-                onClick={() => { setEditandoId(null); setNovaTurma({name: '', course_id: ''}); }}
+                onClick={() => { setEditandoId(null); setNovaTurma({name: '', subject_id: ''}); }}
                 className="text-slate-500 text-sm underline"
               >
                 Cancelar
@@ -169,44 +173,28 @@ export default function Turmas() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-slate-100 text-slate-400 text-sm">
-                <th className="py-4 font-semibold">ID</th>
                 <th className="py-4 font-semibold">Turma</th>
-                <th className="py-4 font-semibold">Curso Vinculado</th>
+                <th className="py-4 font-semibold">Matéria Vinculada</th>
                 <th className="py-4 font-semibold">Ações</th>
               </tr>
             </thead>
             <tbody>
               {turmas.map((turma: any) => (
                 <tr key={turma.ID} className="border-b border-slate-50 text-slate-800 hover:bg-slate-50">
-                  <td className="py-4 text-sm font-bold">#{turma.ID}</td>
-                  <td className="py-4 text-sm">{turma.name}</td>
+                  <td className="py-4 text-sm font-bold">{turma.name}</td>
                   <td className="py-4 text-sm">
-                    <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">
-                      {turma.course?.name || "Sem curso"}
+                    <span className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold">
+                      {turma.subject?.name || "Sem matéria"}
                     </span>
                   </td>
                   <td className="py-4 text-sm flex gap-2">
-                      <button 
-                        onClick={() => handleDelete(turma.ID)}
-                        className="text-red-500 hover:text-red-700 transition-colors p-1"
-                        title="Excluir turma"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                      <button 
-                        onClick={() => preencherEdicao(turma)} 
-                        className="text-blue-500 hover:text-blue-700 p-1"
-                        title="Editar turma"
-                      >
-                        <Pencil size={18} />
-                      </button>
+                      <button onClick={() => handleDelete(turma.ID)} className="text-red-500 hover:text-red-700 p-1"><Trash2 size={18} /></button>
+                      <button onClick={() => preencherEdicao(turma)} className="text-blue-500 hover:text-blue-700 p-1"><Pencil size={18} /></button>
                     </td>
                 </tr>
               ))}
               {turmas.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-400 text-sm">Nenhuma turma encontrada.</td>
-                </tr>
+                <tr><td colSpan={3} className="py-8 text-center text-slate-400 text-sm">Nenhuma turma encontrada.</td></tr>
               )}
             </tbody>
           </table>
