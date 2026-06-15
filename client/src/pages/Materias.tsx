@@ -20,31 +20,52 @@ export default function Materias() {
     const user = userString ? JSON.parse(userString) : null;
 
     try {
+      console.log("Iniciando busca de Materias e Cursos...");
       const [resMaterias, resCursos] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_URL}/subjects`, { headers: { "Authorization": token || "" } }),
         fetch(`${import.meta.env.VITE_API_URL}/courses`, { headers: { "Authorization": token || "" } })
       ]);
 
+      if (!resMaterias.ok || !resCursos.ok) {
+        console.error("Erro na API! Materias Status:", resMaterias.status, "Cursos Status:", resCursos.status);
+        setMaterias([]);
+        setCursos([]);
+        return;
+      }
+
       let materiasData = await resMaterias.json();
       let cursosData = await resCursos.json();
+      
+      console.log("Dados recebidos da API -> Materias:", materiasData);
+      console.log("Dados recebidos da API -> Cursos:", cursosData);
+
+      // BLINDAGEM CRÍTICA: Se não for Array, transforma em Array vazio para não quebrar o .map()
+      if (!Array.isArray(materiasData)) materiasData = [];
+      if (!Array.isArray(cursosData)) cursosData = [];
 
       if (user?.role !== "admin") {
         let cursosPermitido: string[] = [];
-        if (user?.course){ 
+        if (user?.curso){ 
           try{
-            cursosPermitido = JSON.parse(user.course); 
+            cursosPermitido = JSON.parse(user.curso); 
           }catch(e){
-            cursosPermitido = [user.course]; 
+            cursosPermitido = [user.curso]; 
           }
         }
-        cursosData = cursosData.filter((c: any) => cursosPermitido.includes(c.name));
-        materiasData = materiasData.filter((m: any) => cursosPermitido.includes(m.course?.name));
+        
+        // Proteção extra dentro do filter caso course não exista
+        cursosData = cursosData.filter((c: any) => c.name && cursosPermitido.includes(c.name));
+        materiasData = materiasData.filter((m: any) => m.course?.name && cursosPermitido.includes(m.course?.name));
       }
 
       setMaterias(materiasData);
       setCursos(cursosData);
+      console.log("Dados finais processados com sucesso.");
+      
     } catch (err) {
-      console.error("Erro ao carregar matérias:", err);
+      console.error("Falha catastrófica ao carregar matérias:", err);
+      setMaterias([]);
+      setCursos([]);
     }
   };
 
