@@ -9,6 +9,7 @@ import Admin from './pages/Admin';
 import ProtectedRoute from './utils/ProtectedRoute';
 import AdminRoute from './utils/AdminRoute';
 import Agendamentos from './pages/Agendamentos';
+import Materias from './pages/Materias';
 
 export default function App() {
   return (
@@ -65,6 +66,14 @@ export default function App() {
           element={
             <ProtectedRoute>
               <Agendamentos />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/materias" 
+          element={
+            <ProtectedRoute>
+              <Materias />
             </ProtectedRoute>
           } 
         />
