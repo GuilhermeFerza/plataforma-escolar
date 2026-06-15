@@ -23,7 +23,7 @@ export default function Sidebar() {
     { icon: BookOpen, label: 'Cursos', path: '/cursos' },
     { icon: Users, label: 'Turmas', path: '/turmas' },
     { icon: Calendar, label: 'Agendamentos', path: '/agendamentos' },
-    { icon: MessageSquare, label: 'Mensagens', path: '/mensagens' },
+    { icon: MessageSquare, label: 'Matérias', path: '/materias' },
     { icon: Users, label: 'Alunos', path: '/alunos' },
   ];
 
