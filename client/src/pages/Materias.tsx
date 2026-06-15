@@ -28,7 +28,6 @@ export default function Materias() {
       let materiasData = await resMaterias.json();
       let cursosData = await resCursos.json();
 
-      // Filtro de Acesso (RBAC) para Professores/Funcionários
       if (user?.role !== "admin") {
         let cursosPermitido: string[] = [];
         if (user?.curso){ 
