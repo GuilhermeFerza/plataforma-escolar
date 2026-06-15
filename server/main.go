@@ -82,6 +82,7 @@ func main() {
 		&models.Student{},
 		&models.User{},
 		&models.Appointment{},
+		&models.Subject{},
 	)
 
 	r := gin.Default()
