@@ -21,10 +21,10 @@ export default function Sidebar() {
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: BookOpen, label: 'Cursos', path: '/cursos' },
-    { icon: Users, label: 'Turmas', path: '/turmas' },
-    { icon: Calendar, label: 'Agendamentos', path: '/agendamentos' },
     { icon: MessageSquare, label: 'Matérias', path: '/materias' },
+    { icon: Users, label: 'Turmas', path: '/turmas' },
     { icon: Users, label: 'Alunos', path: '/alunos' },
+    { icon: Calendar, label: 'Agendamentos', path: '/agendamentos' },
   ];
 
   if (userRole === 'admin'){
