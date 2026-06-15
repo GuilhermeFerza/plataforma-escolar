@@ -30,11 +30,11 @@ export default function Materias() {
 
       if (user?.role !== "admin") {
         let cursosPermitido: string[] = [];
-        if (user?.curso){ 
+        if (user?.course){ 
           try{
-            cursosPermitido = JSON.parse(user.curso); 
+            cursosPermitido = JSON.parse(user.course); 
           }catch(e){
-            cursosPermitido = [user.curso]; 
+            cursosPermitido = [user.course]; 
           }
         }
         cursosData = cursosData.filter((c: any) => cursosPermitido.includes(c.name));
