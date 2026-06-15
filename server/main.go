@@ -182,6 +182,10 @@ func main() {
 		protected.GET("/appointments", controllers.GetAppointments)
 		protected.POST("/appointments", controllers.CreateAppointment)
 		protected.DELETE("/appointments/:id", controllers.DeleteAppointment)
+		protected.GET("/subjects", controllers.GetSubjects)
+		protected.POST("/subjects", controllers.CreateSubject)
+		protected.DELETE("/subjects/:id", controllers.DeleteSubject)
+		protected.PUT("/subjects/:id", controllers.UpdateSubject)
 	}
 
 	adminOnly := r.Group("/api")

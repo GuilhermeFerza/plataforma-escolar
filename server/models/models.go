@@ -53,3 +53,12 @@ type Appointment struct {
 	CreatorID   uint      `json:"creator_id"`
 	CreatorName string    `json:"creator_name"`
 }
+
+type Subject struct {
+	gorm.Model
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Workload    string `json:"workload"`
+	CourseID    uint   `json:"course_id"`
+	Course      Course `json:"course" gorm:"foreignKey:CourseID"`
+}
