@@ -49,11 +49,7 @@ export default function Turmas() {
           try { cursosPermitidos = JSON.parse(user.curso); } 
           catch (e) { cursosPermitidos = [user.curso]; }
         }
-        
         materiasData = materiasData.filter((m: any) => m.course?.name && cursosPermitidos.includes(m.course?.name));
-
-
-
         turmasData = turmasData.filter((t: any) => {
           if (!t.subject) return false;
           return t.subject.course?.name && cursosPermitidos.includes(t.subject.course.name);

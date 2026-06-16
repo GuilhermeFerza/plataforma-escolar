@@ -49,6 +49,11 @@ export default function Dashboard() {
 
   const carregarCursos = async () => {
     const token = localStorage.getItem("token");
+    const userString =localStorage.getItem("user");
+    const user = userString ? JSON.parse(userString) : null;
+
+    if (!token) return;
+
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/courses`, {
         headers: { "Authorization": token || "" }
@@ -60,14 +65,26 @@ export default function Dashboard() {
         return;
       }
 
-      const data = await response.json();
-      
-      // BLINDAGEM CRÍTICA
-      if (Array.isArray(data)) {
-        setCursos(data);
-      } else {
-        console.error("A API não retornou uma lista de cursos:", data);
+      let cursosData = await response.json();
+
+      if (Array.isArray(cursosData)){
+        console.error("A API nao retornou uma lista de cursos:", cursosData);
         setCursos([]);
+        return;
+      }
+
+      if (user.role !== "admin"){
+        let cursosPermitidos: string[] = [];
+        if(user?.curso){
+          try{
+            cursosPermitidos = JSON.parse(user.curso);
+          }catch(e){
+            cursosPermitidos = [user.curso];
+          }
+          cursosData = cursosData.filter((c: any) => c.name && cursosPermitidos.includes(c.name))
+        } else{
+        cursosData = [];
+        }
       }
     } catch (err) {
       console.error("Falha na requisição de cursos:", err);
@@ -75,7 +92,6 @@ export default function Dashboard() {
     }
   };
 
-  // CORREÇÃO: Função buscarStats blindada com async/await
   const buscarStats = async () => {
     const token = localStorage.getItem("token");
     try {
@@ -124,7 +140,7 @@ export default function Dashboard() {
         setNovoCurso({ name: '', category: '', duration: '', max_students: 30 });
         setEditandoId(null); 
         carregarCursos();
-        buscarStats(); // Atualiza os números lá de cima também!
+        buscarStats();
       } else {
         const errorData = await response.json();
         setToastErro(errorData.error || "Erro ao salvar curso");
@@ -146,7 +162,7 @@ export default function Dashboard() {
 
         if (response.ok) {
           carregarCursos();
-          buscarStats(); // Atualiza os números após deletar
+          buscarStats();
         } else {
           const errorData = await response.json();
           setToastErro(errorData.error || "Erro ao deletar");
