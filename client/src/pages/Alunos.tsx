@@ -197,7 +197,7 @@ export default function Alunos() {
                         {aluno.class?.name || "Sem Turma"}
                       </span>
                       <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs">
-                        {aluno.class?.subject?.course?.name || "Sem Curso"}
+                        {aluno.class?.subject?.name || "Sem Curso"}
                       </span>
                     </div>
                   </td>
