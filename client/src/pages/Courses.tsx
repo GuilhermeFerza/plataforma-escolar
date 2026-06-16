@@ -7,11 +7,20 @@ export default function Courses() {
   const [cursos, setCursos] = useState<any[]>([]);
   const [busca, setBusca] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const userString = localStorage.getItem("user");
+    if (userString) {
+      const user = JSON.parse(userString);
+      setIsAdmin(user.role === "admin");
+    }
+  }, []);
 
   const carregarCursos = async (termo = "") => {
     const token = localStorage.getItem("token");
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/courses?=${termo}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/courses?name=${termo}`, {
         headers:{
           "Authorization": token || ""
         }
@@ -56,12 +65,16 @@ export default function Courses() {
             <h1 className="text-3xl font-bold text-slate-800">Cursos Técnicos</h1>
             <p className="text-slate-500">Gerencie o catálogo e a ocupação das turmas.</p>
           </div>
-          <button
-            onClick={()=> setIsModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20">
-            <Plus size={20} />
-            Novo Curso
-          </button>
+          
+          {isAdmin && (
+            <button
+              onClick={()=> setIsModalOpen(true)}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-blue-700 shadow-lg shadow-blue-600/20"
+            >
+              <Plus size={20} />
+              Novo Curso
+            </button>
+          )}
         </header>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm mb-6 flex gap-4">
@@ -93,23 +106,33 @@ export default function Courses() {
               </tr>
             </thead>
             <tbody>
-              {cursos.map((curso: any) => (
-                <tr key={curso.ID} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
-                  <td className="px-6 py-4 text-sm font-bold text-slate-400">#{curso.ID}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-slate-800">{curso.name}</td>
-                  <td className="px-6 py-4 text-sm">
-                    <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-semibold uppercase">
-                      {curso.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-600">{curso.duration}</td>
-                  <td className="px-6 py-4 text-sm text-slate-600">
-                    {(curso.classes || []).reduce((acc: number, turma: any) => 
-                      acc + (turma.students?.length || 0), 0
-                    )} / {curso.max_students}
-                  </td>
+              {cursos && cursos.length > 0 ? (
+                cursos.map((curso: any) => (
+                  <tr key={curso.ID} className="border-b border-slate-50 hover:bg-slate-50/80 transition-colors">
+                    <td className="px-6 py-4 text-sm font-bold text-slate-400">#{curso.ID}</td>
+                    <td className="px-6 py-4 text-sm font-medium text-slate-800">{curso.name}</td>
+                    <td className="px-6 py-4 text-sm">
+                      <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-semibold uppercase">
+                        {curso.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">{curso.duration}</td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                       {/* Atenção: Lembra da hierarquia? course.subjects.classes.students. 
+                           Se o Back-end não mandar a árvore completa, aqui vai dar 0. */}
+                      {(curso.subjects || []).reduce((accSub: number, subject: any) => 
+                        accSub + (subject.classes || []).reduce((accClass: number, turma: any) => 
+                          accClass + (turma.students?.length || 0), 0
+                        ), 0
+                      )} / {curso.max_students}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="py-8 text-center text-slate-400">Nenhum curso encontrado.</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>

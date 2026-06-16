@@ -4,6 +4,7 @@ import { Users, BookOpen, Calendar, PlusCircle, Trash2, Pencil, AlertCircle } fr
 
 export default function Dashboard() {
   const [toastErro, setToastErro] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [statsData, setStatsData] = useState({
     total_students: 0,
     total_courses: 0,
@@ -21,6 +22,14 @@ export default function Dashboard() {
 
   const [categorias, setCategorias] = useState<string[]>([]);
   const [nomesSugeridos, setNomesSugeridos] = useState<string[]>([]);
+
+  useEffect(() => {
+    const userString = localStorage.getItem("user");
+    if (userString) {
+      const user = JSON.parse(userString);
+      setIsAdmin(user.role === "admin");
+    }
+  }, []);
 
   useEffect(() => {
     if (Array.isArray(cursos) && cursos.length > 0) {
@@ -66,9 +75,6 @@ export default function Dashboard() {
       }
 
       let cursosData = await response.json();
-      
-      // DIAGNÓSTICO 1: O que a API mandou?
-      console.log("1. Dados recebidos da API:", cursosData);
 
       if (!Array.isArray(cursosData)){
         console.error("A API nao retornou uma lista de cursos:", cursosData);
@@ -78,35 +84,18 @@ export default function Dashboard() {
 
       if (user?.role !== "admin"){
         let cursosPermitidos: string[] = [];
-        
-        // DIAGNÓSTICO 2: O que tem na string do usuário?
-        console.log("2. String 'curso' do usuario:", user?.curso);
-        
         if(user?.curso){
           try{
             cursosPermitidos = JSON.parse(user.curso);
           }catch(e){
             cursosPermitidos = [user.curso];
           }
-          
-          // DIAGNÓSTICO 3: Quais cursos foram permitidos?
-          console.log("3. Array de cursos permitidos:", cursosPermitidos);
-
-          // DIAGNÓSTICO 4: Executando o filtro...
-          cursosData = cursosData.filter((c: any) => {
-             const passou = c.name && cursosPermitidos.includes(c.name);
-             console.log(`Testando curso: '${c.name}' -> Passou no filtro?`, passou);
-             return passou;
-          });
-          
-        } else{
-           console.log("Usuario nao tem cursos cadastrados. Lista esvaziada.");
+          cursosData = cursosData.filter((c: any) => c.name && cursosPermitidos.includes(c.name))
+        } else {
            cursosData = [];
         }
       }
-
-      // DIAGNÓSTICO 5: Qual é o resultado final que vai pra tela?
-      console.log("5. Dados finais apos filtro:", cursosData);
+      
       setCursos(cursosData);
 
     } catch (err) {
@@ -238,70 +227,72 @@ export default function Dashboard() {
           ))}
         </div>
 
-        <section className="mb-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <PlusCircle size={20} className="text-emerald-500" /> {editandoId ? 'Editar Curso' : 'Novo Curso'}
-          </h2>
-          <form onSubmit={handleAddCourse} className="grid grid-cols-1 md:grid-cols-5 gap-5">
-            
-            <div className="relative">
+        {isAdmin && (
+          <section className="mb-8 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <PlusCircle size={20} className="text-emerald-500" /> {editandoId ? 'Editar Curso' : 'Novo Curso'}
+            </h2>
+            <form onSubmit={handleAddCourse} className="grid grid-cols-1 md:grid-cols-5 gap-5">
+              
+              <div className="relative">
+                <input 
+                  list="lista-categorias"
+                  type="text" 
+                  placeholder="Categoria (Escolha/Digite)" 
+                  className="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                  value={novoCurso.category} 
+                  onChange={(e) => setNovoCurso({...novoCurso, category: e.target.value})}
+                  required
+                />
+                <datalist id="lista-categorias">
+                  {categorias.map((cat: any) => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div className="relative">
+                <input 
+                  list="lista-nomes-cursos"
+                  type="text" 
+                  placeholder="Nome (Escolha/Digite)" 
+                  className="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500"
+                  value={novoCurso.name} 
+                  onChange={(e) => setNovoCurso({...novoCurso, name: e.target.value})} 
+                  required
+                />
+                <datalist id="lista-nomes-cursos">
+                  {nomesSugeridos.map((nome: any) => (
+                    <option key={nome} value={nome} />
+                  ))}
+                </datalist>
+              </div>
+
               <input 
-                list="lista-categorias"
-                type="text" 
-                placeholder="Categoria (Escolha/Digite)" 
-                className="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                value={novoCurso.category} 
-                onChange={(e) => setNovoCurso({...novoCurso, category: e.target.value})}
-                required
+                type="text" placeholder="Duração (ex: 40h)" className="p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                value={novoCurso.duration} onChange={(e) => setNovoCurso({...novoCurso, duration: e.target.value})}
               />
-              <datalist id="lista-categorias">
-                {categorias.map((cat: any) => (
-                  <option key={cat} value={cat} />
-                ))}
-              </datalist>
-            </div>
-
-            <div className="relative">
               <input 
-                list="lista-nomes-cursos"
-                type="text" 
-                placeholder="Nome (Escolha/Digite)" 
-                className="w-full p-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500"
-                value={novoCurso.name} 
-                onChange={(e) => setNovoCurso({...novoCurso, name: e.target.value})} 
-                required
+                type="number" placeholder="Máx. Alunos" className="p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+                value={novoCurso.max_students} onChange={(e) => setNovoCurso({...novoCurso, max_students: Number(e.target.value)})}
+                min="1"
               />
-              <datalist id="lista-nomes-cursos">
-                {nomesSugeridos.map((nome: any) => (
-                  <option key={nome} value={nome} />
-                ))}
-              </datalist>
-            </div>
-
-            <input 
-              type="text" placeholder="Duração (ex: 40h)" className="p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-              value={novoCurso.duration} onChange={(e) => setNovoCurso({...novoCurso, duration: e.target.value})}
-            />
-            <input 
-              type="number" placeholder="Máx. Alunos" className="p-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
-              value={novoCurso.max_students} onChange={(e) => setNovoCurso({...novoCurso, max_students: Number(e.target.value)})}
-              min="1"
-            />
-            <button type="submit" className={`${editandoId ? 'bg-blue-500 hover:bg-blue-600' : 'bg-emerald-500 hover:bg-emerald-600'} text-white font-bold rounded-lg cursor-pointer transition-colors shadow-sm`}>
-              {editandoId ? 'Atualizar Curso' : 'Salvar Curso'}
-            </button>
-
-            {editandoId && (
-              <button 
-                type="button" 
-                onClick={() => {setEditandoId(null); setNovoCurso({name:'', category:'', duration:'', max_students: 30})}}
-                className="col-span-5 md:col-span-1 text-slate-400 text-xs mt-[-10px] underline hover:text-slate-600 cursor-pointer"
-              >
-                Cancelar Edição
+              <button type="submit" className={`${editandoId ? 'bg-blue-500 hover:bg-blue-600' : 'bg-emerald-500 hover:bg-emerald-600'} text-white font-bold rounded-lg cursor-pointer transition-colors shadow-sm`}>
+                {editandoId ? 'Atualizar Curso' : 'Salvar Curso'}
               </button>
-            )}
-          </form>
-        </section>
+
+              {editandoId && (
+                <button 
+                  type="button" 
+                  onClick={() => {setEditandoId(null); setNovoCurso({name:'', category:'', duration:'', max_students: 30})}}
+                  className="col-span-5 md:col-span-1 text-slate-400 text-xs mt-[-10px] underline hover:text-slate-600 cursor-pointer"
+                >
+                  Cancelar Edição
+                </button>
+              )}
+            </form>
+          </section>
+        )}
 
         <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm text-slate-900">
           <h2 className="text-xl font-bold mb-6">Cursos no Banco de Dados</h2>
@@ -313,7 +304,9 @@ export default function Dashboard() {
                   <th className="py-4 font-semibold text-sm">Nome</th>
                   <th className="py-4 font-semibold text-sm">Categoria</th>
                   <th className="py-4 font-semibold text-sm">Duração</th>
-                  <th className="py-4 font-semibold text-sm">Ações</th>
+                  
+                  {/* Se for Admin, mostra o cabeçalho da coluna Ações */}
+                  {isAdmin && <th className="py-4 font-semibold text-sm">Ações</th>}
                 </tr>
               </thead>
               <tbody>
@@ -326,27 +319,31 @@ export default function Dashboard() {
                         <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-xs font-bold uppercase">{curso.category}</span>
                       </td>
                       <td className="py-4 text-sm text-slate-600">{curso.duration}</td>
-                      <td className="py-4 text-sm">
-                        <button 
-                          onClick={() => handleDelete(curso.ID)}
-                          className="text-red-400 hover:text-red-600 transition-colors p-1 cursor-pointer"
-                          title="Excluir curso"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                        <button 
-                          onClick={() => preencherEdicao(curso)} 
-                          className="text-blue-400 hover:text-blue-600 transition-colors p-2 mr-2 cursor-pointer"
-                          title="Editar curso"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                      </td>
+                      
+                      {/* Se for Admin, mostra a coluna com os botões. Se for professor, esconde. */}
+                      {isAdmin && (
+                        <td className="py-4 text-sm">
+                          <button 
+                            onClick={() => handleDelete(curso.ID)}
+                            className="text-red-400 hover:text-red-600 transition-colors p-1 cursor-pointer"
+                            title="Excluir curso"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                          <button 
+                            onClick={() => preencherEdicao(curso)} 
+                            className="text-blue-400 hover:text-blue-600 transition-colors p-2 mr-2 cursor-pointer"
+                            title="Editar curso"
+                          >
+                            <Pencil size={18} />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={5} className="py-8 text-center text-slate-400">Nenhum curso encontrado.</td>
+                    <td colSpan={isAdmin ? 5 : 4} className="py-8 text-center text-slate-400">Nenhum curso encontrado.</td>
                   </tr>
                 )}
               </tbody>
