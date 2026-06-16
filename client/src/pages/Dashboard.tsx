@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { Users, BookOpen, Calendar, PlusCircle, Trash2, Pencil, AlertCircle } from 'lucide-react';
 
-
 export default function Dashboard() {
   const [toastErro, setToastErro] = useState("");
   const [statsData, setStatsData] = useState({
@@ -10,9 +9,9 @@ export default function Dashboard() {
     total_courses: 0,
     total_classes: 0
   });
-  
-  const [cursos, setCursos] = useState([]);
-  const [editandoId, setEditandoId] = useState(null);
+
+  const [cursos, setCursos] = useState<any[]>([]);
+  const [editandoId, setEditandoId] = useState<number | null>(null);
   const [novoCurso, setNovoCurso] = useState({
     name: '',
     category: '',
@@ -24,13 +23,17 @@ export default function Dashboard() {
   const [nomesSugeridos, setNomesSugeridos] = useState<string[]>([]);
 
   useEffect(() => {
-    if (cursos.length > 0) {
+    if (Array.isArray(cursos) && cursos.length > 0) {
       const catsUnicas = [...new Set(cursos.map((c: any) => c.category).filter(Boolean))];
       setCategorias(catsUnicas as string[]);
+    } else {
+      setCategorias([]);
     }
   }, [cursos]);
 
   useEffect(() => {
+    if (!Array.isArray(cursos)) return;
+    
     if (novoCurso.category) {
       const nomesFiltrados = cursos
         .filter((c: any) => c.category === novoCurso.category)
@@ -44,20 +47,57 @@ export default function Dashboard() {
     }
   }, [novoCurso.category, cursos]);
 
-  const carregarCursos = () => {
+  const carregarCursos = async () => {
     const token = localStorage.getItem("token");
-    fetch(`${import.meta.env.VITE_API_URL}/courses`, {
-      headers: {
-        "Authorization": token || ""
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/courses`, {
+        headers: { "Authorization": token || "" }
+      });
+      
+      if (!response.ok) {
+        console.error("Erro na API ao carregar cursos. Status:", response.status);
+        setCursos([]);
+        return;
       }
-    })
-      .then(response => response.json())
-      .then(data => setCursos(data))
-      .catch(err => console.error("Erro ao carregar:", err));
+
+      const data = await response.json();
+      
+      // BLINDAGEM CRÍTICA
+      if (Array.isArray(data)) {
+        setCursos(data);
+      } else {
+        console.error("A API não retornou uma lista de cursos:", data);
+        setCursos([]);
+      }
+    } catch (err) {
+      console.error("Falha na requisição de cursos:", err);
+      setCursos([]);
+    }
+  };
+
+  // CORREÇÃO: Função buscarStats blindada com async/await
+  const buscarStats = async () => {
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/stats`, {
+        headers: { "Authorization": token || "" }
+      });
+
+      if (!response.ok) {
+        console.error("Erro na API ao carregar estatísticas. Status:", response.status);
+        return;
+      }
+
+      const data = await response.json();
+      setStatsData(data);
+    } catch (err) {
+      console.error("Falha na requisição de stats:", err);
+    }
   };
 
   useEffect(() => {
     carregarCursos();
+    buscarStats();
   }, []);
 
   const handleAddCourse = async (e: React.FormEvent) => {
@@ -84,8 +124,11 @@ export default function Dashboard() {
         setNovoCurso({ name: '', category: '', duration: '', max_students: 30 });
         setEditandoId(null); 
         carregarCursos();
+        buscarStats(); // Atualiza os números lá de cima também!
       } else {
-        console.error("Não autorizado ou erro no servidor");
+        const errorData = await response.json();
+        setToastErro(errorData.error || "Erro ao salvar curso");
+        setTimeout(() => setToastErro(""), 5000);
       }
     } catch (err) {
       console.error("Erro na operação:", err);
@@ -103,9 +146,10 @@ export default function Dashboard() {
 
         if (response.ok) {
           carregarCursos();
+          buscarStats(); // Atualiza os números após deletar
         } else {
           const errorData = await response.json();
-          setToastErro(errorData.error);
+          setToastErro(errorData.error || "Erro ao deletar");
           setTimeout(() => setToastErro(""), 5000);
         }
       } catch (err) {
@@ -125,22 +169,10 @@ export default function Dashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    fetch(`${import.meta.env.VITE_API_URL}/stats`, {
-      headers: {
-        "Authorization": token || ""
-      }
-    })
-      .then(res => res.json())
-      .then(data => setStatsData(data))
-      .catch(err => console.error("Erro ao buscar stats:", err));
-  }, []);
-
   const stats = [
-    { label: 'Total de Alunos', value: statsData.total_students, color: 'text-blue-600', bg: 'bg-blue-100', icon: Users },
-    { label: 'Cursos Ativos', value: statsData.total_courses, color: 'text-emerald-600', bg: 'bg-emerald-100', icon: BookOpen },
-    { label: 'Turmas Ativas', value: statsData.total_classes, color: 'text-amber-600', bg: 'bg-amber-100', icon: Calendar },
+    { label: 'Total de Alunos', value: statsData.total_students || 0, color: 'text-blue-600', bg: 'bg-blue-100', icon: Users },
+    { label: 'Cursos Ativos', value: statsData.total_courses || 0, color: 'text-emerald-600', bg: 'bg-emerald-100', icon: BookOpen },
+    { label: 'Turmas Ativas', value: statsData.total_classes || 0, color: 'text-amber-600', bg: 'bg-amber-100', icon: Calendar },
   ];
 
   return (
@@ -246,7 +278,7 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {cursos && cursos.length > 0 ? (
+                {Array.isArray(cursos) && cursos.length > 0 ? (
                   cursos.map((curso: any) => (
                     <tr key={curso.ID} className="border-b border-slate-50 hover:bg-slate-50">
                       <td className="py-4 text-sm font-bold text-slate-400">#{curso.ID}</td>
