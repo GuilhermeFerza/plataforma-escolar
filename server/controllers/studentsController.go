@@ -8,7 +8,7 @@ import (
 
 func GetStudents(c *gin.Context) {
 	var students []models.Student
-	database.DB.Preload("Class.Course").Find(&students)
+	database.DB.Preload("Class.Subject.Course").Find(&students)
 	c.JSON(200, students)
 }
 
