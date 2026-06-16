@@ -5,12 +5,19 @@ import { PlusCircle, Trash2, Pencil, AlertCircle } from 'lucide-react';
 export default function Turmas() {
   const [toastErro, setToastErro] = useState("");
   const [turmas, setTurmas] = useState<any[]>([]);
-  const [materias, setMaterias] = useState<any[]>([]); // Mudou de cursos para materias
+  const [materias, setMaterias] = useState<any[]>([]);
   const [editandoId, setEditandoId] = useState<number | null>(null); 
   const [novaTurma, setNovaTurma] = useState<{name: string, subject_id: number | string}>({
     name: '',
-    subject_id: '' // Mudou de course_id para subject_id
+    subject_id: ''
   });
+
+
+
+
+
+
+
 
   const carregarTurmas = async () => {
     const token = localStorage.getItem("token");
@@ -20,7 +27,6 @@ export default function Turmas() {
     if (!token) return;
 
     try {
-      // Busca Classes e Subjects (Matérias)
       const [resTurmas, resMaterias] = await Promise.all([
         fetch(`${import.meta.env.VITE_API_URL}/classes`, { headers: { "Authorization": token } }),
         fetch(`${import.meta.env.VITE_API_URL}/subjects`, { headers: { "Authorization": token } })
@@ -37,7 +43,6 @@ export default function Turmas() {
       if (!Array.isArray(turmasData)) turmasData = [];
       if (!Array.isArray(materiasData)) materiasData = [];
 
-      // Filtro RBAC: O professor só vê turmas e matérias dos cursos que ele leciona
       if (user?.role !== "admin") {
         let cursosPermitidos: string[] = [];
         if (user?.curso) {
@@ -45,9 +50,14 @@ export default function Turmas() {
           catch (e) { cursosPermitidos = [user.curso]; }
         }
         
-        // Filtra a lista usando o curso da matéria
         materiasData = materiasData.filter((m: any) => m.course?.name && cursosPermitidos.includes(m.course?.name));
-        turmasData = turmasData.filter((t: any) => t.subject?.course?.name && cursosPermitidos.includes(t.subject?.course?.name));
+
+
+
+        turmasData = turmasData.filter((t: any) => {
+          if (!t.subject) return false;
+          return t.subject.course?.name && cursosPermitidos.includes(t.subject.course.name);
+        });
       }
 
       setTurmas(turmasData);
@@ -62,6 +72,14 @@ export default function Turmas() {
   const handleAddClass = async (e: React.FormEvent) => {
     e.preventDefault();
 
+
+
+    if (!novaTurma.subject_id || novaTurma.subject_id === ""){
+      setToastErro("Selecione uma materia antes de criar a turma!")
+      setTimeout(() => setToastErro(""), 4000);
+      return;
+    }
+
     const url = editandoId
       ? `${import.meta.env.VITE_API_URL}/classes/${editandoId}`
       : `${import.meta.env.VITE_API_URL}/classes`;
@@ -69,6 +87,11 @@ export default function Turmas() {
     const metodo = editandoId ? "PUT" : "POST"
     const token = localStorage.getItem("token");
 
+    const payload = {
+      name: novaTurma.name,
+      subject_id: parseInt(novaTurma.subject_id as string, 10)
+    };
+    
     try {
       const response = await fetch(url, {
         method: metodo,
