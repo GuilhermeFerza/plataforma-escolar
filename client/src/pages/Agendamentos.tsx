@@ -161,7 +161,7 @@ export default function Agendamentos() {
               >
                 <option value="">Geral (Todas as turmas)</option>
                 {turmas.map((turma: any) => (
-                  <option key={turma.ID} value={turma.ID}>Turma: {turma.name}</option>
+                  <option key={turma.ID} value={turma.ID}>Turma: {turma.name} da Materia: {turma.subject?.name || 'Sem Materia'}</option>
                 ))}
               </select>
             </div>
