@@ -8,11 +8,11 @@ import (
 
 type Course struct {
 	gorm.Model
-	Name        string  `json:"name"`
-	Category    string  `json:"category"`
-	Duration    string  `json:"duration"`
-	MaxStudents int     `json:"max_students"`
-	Classes     []Class `json:"classes"`
+	Name        string    `json:"name"`
+	Category    string    `json:"category"`
+	Duration    string    `json:"duration"`
+	MaxStudents int       `json:"max_students"`
+	Subject     []Subject `json:"subject"`
 }
 
 type Class struct {
@@ -56,9 +56,10 @@ type Appointment struct {
 
 type Subject struct {
 	gorm.Model
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Workload    string `json:"workload"`
-	CourseID    uint   `json:"course_id"`
-	Course      Course `json:"course" gorm:"foreignKey:CourseID"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Workload    string  `json:"workload"`
+	CourseID    uint    `json:"course_id"`
+	Course      Course  `json:"course" gorm:"foreignKey:CourseID"`
+	Classes     []Class `json:"classes"`
 }
