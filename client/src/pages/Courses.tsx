@@ -4,7 +4,7 @@ import { Plus, Search, Filter } from 'lucide-react';
 import NewCourseModal from '../components/NewCourseModal';
 
 export default function Courses() {
-  const [cursos, setCursos] = useState([]);
+  const [cursos, setCursos] = useState<any[]>([]);
   const [busca, setBusca] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -17,10 +17,24 @@ export default function Courses() {
         }
       });
       
+      if (!response.ok){
+        console.error("Erro na API ao carregar cursos. Status: ", response.status);
+        setCursos([]);
+        return;
+      }
+
       const data = await response.json();
-      setCursos(data);
+
+      if (Array.isArray(data)){
+        setCursos(data);
+      } else {
+        console.error("A API não retornou uma lista de cursos: ", data);
+        setCursos([]);
+      }
+
     } catch (err) {
       console.error("Erro ao carregar cursos:", err);
+      setCursos([]);
     }
   };
 
