@@ -18,6 +18,24 @@ func CreateStudent(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Dados inválidos"})
 		return
 	}
+
+	var turmaDesejada models.Class
+	if err := database.DB.Preload("Subject").First(&turmaDesejada, novoAluno.ClassID).Error; err != nil {
+		c.JSON(404, gin.H{"error": "Turma nao encontrada"})
+		return
+	}
+	cursoDesejadoID := turmaDesejada.Subject.CourseID
+
+	var matriculasExistentes []models.Student
+	database.DB.Preload("Class.Subject").Where("cpf = ?", novoAluno.CPF).Find(&matriculasExistentes)
+
+	for _, matricula := range matriculasExistentes {
+		if matricula.Class.Subject.CourseID == cursoDesejadoID {
+			c.JSON(400, gin.H{"error": "este aluno ja possui uma matricula ativa neste curso!"})
+			return
+		}
+	}
+
 	database.DB.Create(&novoAluno)
 	c.JSON(201, novoAluno)
 }

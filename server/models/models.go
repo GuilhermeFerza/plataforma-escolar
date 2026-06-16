@@ -27,7 +27,7 @@ type Student struct {
 	gorm.Model
 	Name    string `json:"name"`
 	Email   string `json:"email"`
-	CPF     string `json:"cpf" gorm:"unique"`
+	CPF     string `json:"cpf"`
 	ClassID uint   `json:"class_id"`
 	Class   Class  `json:"class" gorm:"foreignKey:ClassID"`
 }
