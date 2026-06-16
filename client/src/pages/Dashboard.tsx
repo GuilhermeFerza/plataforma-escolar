@@ -67,7 +67,7 @@ export default function Dashboard() {
 
       let cursosData = await response.json();
 
-      if (Array.isArray(cursosData)){
+      if (!Array.isArray(cursosData)){
         console.error("A API nao retornou uma lista de cursos:", cursosData);
         setCursos([]);
         return;
