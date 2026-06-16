@@ -49,7 +49,7 @@ export default function Dashboard() {
 
   const carregarCursos = async () => {
     const token = localStorage.getItem("token");
-    const userString =localStorage.getItem("user");
+    const userString = localStorage.getItem("user");
     const user = userString ? JSON.parse(userString) : null;
 
     if (!token) return;
@@ -66,6 +66,9 @@ export default function Dashboard() {
       }
 
       let cursosData = await response.json();
+      
+      // DIAGNÓSTICO 1: O que a API mandou?
+      console.log("1. Dados recebidos da API:", cursosData);
 
       if (!Array.isArray(cursosData)){
         console.error("A API nao retornou uma lista de cursos:", cursosData);
@@ -73,19 +76,39 @@ export default function Dashboard() {
         return;
       }
 
-      if (user.role !== "admin"){
+      if (user?.role !== "admin"){
         let cursosPermitidos: string[] = [];
+        
+        // DIAGNÓSTICO 2: O que tem na string do usuário?
+        console.log("2. String 'curso' do usuario:", user?.curso);
+        
         if(user?.curso){
           try{
             cursosPermitidos = JSON.parse(user.curso);
           }catch(e){
             cursosPermitidos = [user.curso];
           }
-          cursosData = cursosData.filter((c: any) => c.name && cursosPermitidos.includes(c.name))
+          
+          // DIAGNÓSTICO 3: Quais cursos foram permitidos?
+          console.log("3. Array de cursos permitidos:", cursosPermitidos);
+
+          // DIAGNÓSTICO 4: Executando o filtro...
+          cursosData = cursosData.filter((c: any) => {
+             const passou = c.name && cursosPermitidos.includes(c.name);
+             console.log(`Testando curso: '${c.name}' -> Passou no filtro?`, passou);
+             return passou;
+          });
+          
         } else{
-        cursosData = [];
+           console.log("Usuario nao tem cursos cadastrados. Lista esvaziada.");
+           cursosData = [];
         }
       }
+
+      // DIAGNÓSTICO 5: Qual é o resultado final que vai pra tela?
+      console.log("5. Dados finais apos filtro:", cursosData);
+      setCursos(cursosData);
+
     } catch (err) {
       console.error("Falha na requisição de cursos:", err);
       setCursos([]);
