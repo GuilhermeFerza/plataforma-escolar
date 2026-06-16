@@ -19,7 +19,7 @@ type Class struct {
 	gorm.Model
 	Name      string    `json:"name"`
 	SubjectID uint      `json:"subject_id"`
-	Subject   Course    `json:"subject" gorm:"foreignKey:SubjectID"`
+	Subject   Subject   `json:"subject" gorm:"foreignKey:SubjectID"`
 	Students  []Student `json:"students" gorm:"foreignKey:ClassID"`
 }
 
