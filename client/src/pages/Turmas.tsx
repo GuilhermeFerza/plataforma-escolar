@@ -91,7 +91,7 @@ export default function Turmas() {
       name: novaTurma.name,
       subject_id: parseInt(novaTurma.subject_id as string, 10)
     };
-    
+
     try {
       const response = await fetch(url, {
         method: metodo,
@@ -99,7 +99,7 @@ export default function Turmas() {
           "Content-Type": "application/json",
           "Authorization": token || ""
         },
-        body: JSON.stringify({...novaTurma, subject_id: Number(novaTurma.subject_id)})
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
