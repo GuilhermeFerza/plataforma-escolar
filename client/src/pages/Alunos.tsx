@@ -151,7 +151,7 @@ export default function Alunos() {
               >
                 <option value="" disabled>Selecione a Turma</option>
                 {turmas.map(t => (
-                  <option key={t.ID} value={t.ID}>{t.name} ({t.subject?.course?.name || 'Sem Curso'})</option>
+                  <option key={t.ID} value={t.ID}>{t.name} ({t.subject?.subject?.name || 'Sem Curso'})</option>
                 ))}
               </select>
               <button type="submit" className="bg-indigo-600 text-white rounded-lg py-2 font-bold hover:bg-indigo-700 transition-all cursor-pointer">
