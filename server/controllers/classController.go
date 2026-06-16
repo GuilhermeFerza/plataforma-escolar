@@ -18,6 +18,12 @@ func CreateClass(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Dados inválidos"})
 		return
 	}
+
+	if novaTurma.SubjectID == 0 {
+		c.JSON(400, gin.H{"error": "Obrigatorio selecionar uma materia!"})
+		return
+	}
+
 	database.DB.Create(&novaTurma)
 	c.JSON(201, novaTurma)
 }
