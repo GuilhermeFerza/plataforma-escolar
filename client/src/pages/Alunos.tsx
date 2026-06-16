@@ -41,7 +41,7 @@ export default function Alunos() {
         }
 
 
-        turmasData = turmasData.filter((t: any) => cursosPermitido.includes(t.course?.name));
+        turmasData = turmasData.filter((t: any) => t.subject?.course?.name && cursosPermitido.includes(t.subject.course.name));
         const turmasIdsPermitidas = turmasData.map((t: any) => t.ID);
         alunosData = alunosData.filter((a: any) => turmasIdsPermitidas.includes(a.class_id));
       }
@@ -149,8 +149,8 @@ export default function Alunos() {
               value={novoAluno.class_id} onChange={(e) => setNovoAluno({...novoAluno, class_id: Number(e.target.value)})} required
             >
               <option value="">Selecione a Turma</option>
-              {turmas.map(t => (
-                <option key={t.ID} value={t.ID}>{t.name} ({t.course?.name})</option>
+              {turmas.map((t: any) => (
+                <option key={t.ID} value={t.ID}>{t.name} ({t.subject?.course?.name || "Sem Curso"})</option>
               ))}
             </select>
             <button type="submit" className="bg-blue-600 text-white rounded-lg py-2 font-bold hover:bg-blue-700 transition-all cursor-pointer">
@@ -190,8 +190,12 @@ export default function Alunos() {
                   <td className="py-4 text-sm text-slate-600">{aluno.cpf}</td>
                   <td className="py-4">
                     <div className="flex gap-2">
-                      <span className="bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-xs font-bold">{aluno.class?.name}</span>
-                      <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs">{aluno.class?.course?.name}</span>
+                      <span className="bg-indigo-50 text-indigo-600 px-2 py-1 rounded text-xs font-bold">
+                        {aluno.class?.name}
+                      </span>
+                      <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs">
+                        {aluno.class?.subject?.course?.name || "Sem Curso"}
+                      </span>
                     </div>
                   </td>
                    <td className="py-4 text-sm flex gap-2">
